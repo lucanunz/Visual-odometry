@@ -2,7 +2,7 @@
 #include "utils.h"
 
 int main() {
-    const char* path="/home/luca/vo_data/data";
+    const std::string path="/home/luca/vo_data/data/";
     const std::regex pattern("^meas-\\d.*\\.dat$");
     std::set<std::string> files;
     if(!get_file_names(path,files,pattern)){
