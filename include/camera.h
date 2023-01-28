@@ -15,35 +15,31 @@
     //~ ctor, initialized a camera according to the arguments
     Camera(int rows=100,
            int cols=100,
-           int z_near=10,
-           int z_far=0,
+           int z_near=0,
+           int z_far=10,
            const Eigen::Matrix3f& camera_matrix=Eigen::Matrix3f::Identity());
 
-    //! projects a single point on the image plane
-    //! @returns false if the point is behind the camera or outside the plane
-    // inline  bool projectPoint(Eigen::Vector2f& image_point,
-    //                           const Eigen::Vector3f& world_point){
-    //   Eigen::Vector3f camera_point=_world_in_camera_pose*world_point;
-    //   if (camera_point.z()<=0)
-    //     return false;
-    //   Eigen::Vector3f projected_point=_camera_matrix*camera_point;
-    //   image_point=projected_point.head<2>()*(1./projected_point.z());
-    //   if(image_point.x()<0 || image_point.x()>_cols-1)
-    //     return false;
-    //   if(image_point.y()<0 || image_point.y()>_rows-1)
-    //     return false;
-    //   return true;
-    // }
+    // ! projects a single point on the image plane
+    // ! @returns false if the point is behind the camera or outside the plane
+    inline  bool projectPoint(Eigen::Vector2f& image_point,
+                              const Eigen::Vector3f& world_point){
+      if (world_point.z()<=0 || world_point.z()>_z_far || world_point.z()<_z_near)
+        return false;
+      Eigen::Vector3f projected_point=_camera_matrix*world_point;
+      image_point=projected_point.head<2>()*(1./projected_point.z());
+      if(image_point.x()<0 || image_point.x()>_cols-1)
+        return false;
+      if(image_point.y()<0 || image_point.y()>_rows-1)
+        return false;
+      return true;
+    }
 
     //! projects a bunch of world points on the image
-    //! @param image_points: the points on the image
-    //! @param world points: the input world points
-    //! @param keep_indices: if true, image_points has the same size of world points
-    //! Invalid points are marked with (-1, -1). If false only the points in the set are returned
+    //! @param image_points: the points on the image with the associated id
+    //! @param world points: the input world points. The id of the i-th world point is i.
     //! @returns the number of points that fall inside the image
-    // int projectPoints(Vector2fVector& image_points,
-    //                   const Vector3fVector& world_points,
-    //                   bool keep_indices=false);
+    int projectPoints(Vector3fVector& image_points,
+                      const Vector3fVector& world_points);
   
     inline const Eigen::Matrix3f& cameraMatrix() const {return _camera_matrix;}
     inline const int rows() const {return _rows;}

@@ -1,5 +1,24 @@
 #include "utils.h"
 
+Eigen::Matrix3f skew(const Eigen::Vector3f& v){
+    Eigen::Matrix3f ret;
+    ret << 0,-v(2),v(1),
+        v(2),0,-v(0),
+        -v(1),v(0),0;
+    return ret;
+}
+
+void write_eigen_vectors_to_file(const std::string& file_path, const Vector3fVector& vectors) {
+    std::ofstream output_file(file_path);
+    if(!output_file.is_open()) {
+        std::cout << "Error opening file" << std::endl;
+        return;
+    }
+    for(const auto& vector : vectors)
+        output_file << vector.transpose() << std::endl;
+    
+    output_file.close();
+}
 bool get_file_names(const std::string& path, std::set<std::string>& files,const std::regex& pattern){
     DIR *dir;
     struct dirent *ent;
@@ -108,17 +127,17 @@ void prune_projections(Vector3fVector& p1, Vector3fVector& p2,const std::unorder
             p2.end());
 }
 
-template <typename SquareMatrixType_>
-Eigen::Matrix<typename SquareMatrixType_::Scalar,
-              SquareMatrixType_::RowsAtCompileTime, 1>
-
-smallestEigenVector(const SquareMatrixType_& m) {
-  Eigen::SelfAdjointEigenSolver<SquareMatrixType_> es;
-  es.compute(m);
-  return es.eigenvectors().col(0);
+const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X){
+    Eigen::Matrix3f E;
+    E=X.linear().transpose()*skew(X.translation());
+    return E;
 }
 
-Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fVector& p2_img){
+const Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fVector& p2_img){
+    if(p1_img.size()<8){
+        std::cout << "Less than 8 points\n";
+        return Eigen::Matrix3f::Zero();
+    }
     Matrix9f H=Matrix9f::Zero();
     const int n=p1_img.size();
     for(int i=0;i<n;i++){
@@ -126,15 +145,42 @@ Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fV
         d1 << p1_img[i].tail<2>(),1;
         Eigen::RowVector3f d2;
         d2 << p2_img[i].tail<2>().transpose(),1;
-        Eigen::Matrix3f m=d1*d2;
+        const Eigen::Matrix3f m=d1*d2;
         RowVector9f A;
         A << m(0,0),m(0,1),m(0,2),m(1,0),m(1,1),m(1,2),m(2,0),m(2,1),m(2,2);
         H.noalias()+=A.transpose()*A;
     }
     Vector9f e=smallestEigenVector(H);
+    std::cout << e.transpose() << std::endl;
     Eigen::Matrix3f E;
-    E << e(0,0),e(0,1),e(0,2),
-        e(1,0),e(1,1),e(1,2),
-        e(2,0),e(2,1),e(2,2);
+    E << e(0),e(1),e(2),
+        e(3),e(4),e(5),
+        e(6),e(7),e(8);
     return E;
+}
+
+void generate_isometry3f(Eigen::Isometry3f& X){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+
+    Eigen::Vector3f a = Eigen::Vector3f::NullaryExpr(3,1,[&](){return dis(gen);});
+    a.normalize();
+    Eigen::AngleAxisf random_angle_axis(dis(gen),a);
+    Eigen::Matrix3f rotation_matrix = Eigen::Matrix3f(random_angle_axis);
+
+    X.linear()=rotation_matrix;
+    X.translation()=Eigen::Vector3f::NullaryExpr(3,1,[&](){return dis(gen);});
+}
+
+void generate_points3d(const Eigen::Isometry3f& X,const int& num_points, Vector3fVector& p1, Vector3fVector& p2){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(-5.0f, 5.0f);
+
+    for(int i=0;i<num_points;i++){
+        Eigen::Vector3f p = Eigen::Vector3f::NullaryExpr(3,1,[&](){return dis(gen);});
+        p1.push_back(p);
+        p2.push_back(X*p);
+    }
 }
