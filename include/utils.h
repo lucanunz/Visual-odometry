@@ -48,7 +48,7 @@ void prune_projections(Vector3fVector& p1, Vector3fVector& p2,const std::unorder
 const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X);
 
 // estimate essential matrix from two sets of corresponding points. It assumes that the i-th element of p1_img matches the i-th in p2_img
-const Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fVector& p2_img);
+const Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fVector& p2_img,const Eigen::Matrix3f& k);
 
 // generates a random 3d transformation
 void generate_isometry3f(Eigen::Isometry3f& X);

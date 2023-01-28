@@ -133,25 +133,31 @@ const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X){
     return E;
 }
 
-const Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fVector& p2_img){
+const Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fVector& p2_img, const Eigen::Matrix3f& k){
     if(p1_img.size()<8){
         std::cout << "Less than 8 points\n";
         return Eigen::Matrix3f::Zero();
     }
+    if(p1_img.size() != p2_img.size()){
+        std::cout << "Inconsistent points to estimate essential\n";
+        return Eigen::Matrix3f::Zero();
+    }
     Matrix9f H=Matrix9f::Zero();
+    const auto iK=k.inverse();
     const int n=p1_img.size();
     for(int i=0;i<n;i++){
         Eigen::Vector3f d1;
         d1 << p1_img[i].tail<2>(),1;
-        Eigen::RowVector3f d2;
-        d2 << p2_img[i].tail<2>().transpose(),1;
-        const Eigen::Matrix3f m=d1*d2;
+        d1 = iK*d1;
+        Eigen::Vector3f d2;
+        d2 << p2_img[i].tail<2>(),1;
+        d2 = iK*d2;
+        const Eigen::Matrix3f m=d1*d2.transpose();
         RowVector9f A;
         A << m(0,0),m(0,1),m(0,2),m(1,0),m(1,1),m(1,2),m(2,0),m(2,1),m(2,2);
         H.noalias()+=A.transpose()*A;
     }
     Vector9f e=smallestEigenVector(H);
-    std::cout << e.transpose() << std::endl;
     Eigen::Matrix3f E;
     E << e(0),e(1),e(2),
         e(3),e(4),e(5),

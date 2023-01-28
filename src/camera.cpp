@@ -11,12 +11,11 @@ Camera::Camera(int rows,
     _z_far(z_far),
     _camera_matrix(camera_matrix){}
 
-
+  // Function used only for testing with synthetic data
   int Camera::projectPoints(Vector3fVector& image_points,
                             const Vector3fVector& world_points){
     image_points.resize(world_points.size());
     int num_image_points=0;
-    const Eigen::Vector2f point_outside(-1,-1);
 
     for(size_t i=0; i<world_points.size(); i++){
       const Eigen::Vector3f world_point=world_points[i];
@@ -24,7 +23,7 @@ Camera::Camera(int rows,
       bool is_inside=projectPoint(image_point_coords,world_point);
 
       if (is_inside){
-        image_points[num_image_points] << i,image_point_coords;
+        image_points[num_image_points] << i,image_point_coords; //i is the id.
         num_image_points++;
       }
     }
