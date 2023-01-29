@@ -13,6 +13,9 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 #set internal includes (our files)
 include_directories(include)
 
+#set output directory for executables
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/exec/)
+
 #add build targets
 add_subdirectory(src)
 

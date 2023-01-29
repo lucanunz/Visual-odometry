@@ -1,5 +1,6 @@
 #include <iostream>
 #include "utils.h"
+#include "files_utils.h"
 #include "camera.h"
 int main() {
     // Real data ------------------------------------------------------------------------start
@@ -45,7 +46,7 @@ int main() {
     Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
     Camera cam2(int_params[2],int_params[3],int_params[0],int_params[1],k);
 
-    Eigen::Matrix3f E=estimate_essential(features_1,features_2);
+    Eigen::Matrix3f E=estimate_essential(features_1,features_2,k);
     Eigen::JacobiSVD<Eigen::Matrix3f> svd(E);
     std::cout << svd.singularValues() << std::endl;
     */
@@ -58,15 +59,15 @@ int main() {
 
     Vector3fVector p1;
     Vector3fVector p2;
-    /*
-        data to test the projections
-    p1.push_back(Eigen::Vector3f(0,0,3));
-    p1.push_back(Eigen::Vector3f(1,1,3));
-    p1.push_back(Eigen::Vector3f(0,0,11));
-    p2.push_back(X*(*p1.begin()));
-    p2.push_back(X*(*(p1.begin()+1)));
-    p2.push_back(X*(*(p1.begin()+2)));
-    */
+    
+    //     data to test the projections
+    // p1.push_back(Eigen::Vector3f(0,0,3));
+    // p1.push_back(Eigen::Vector3f(1,1,3));
+    // p1.push_back(Eigen::Vector3f(0,0,11));
+    // p2.push_back(X*(*p1.begin()));
+    // p2.push_back(X*(*(p1.begin()+1)));
+    // p2.push_back(X*(*(p1.begin()+2)));
+    
     generate_points3d(X_gt,90,p1,p2);
     write_eigen_vectors_to_file("p1.txt",p1);
     write_eigen_vectors_to_file("p2.txt",p2);
@@ -84,26 +85,42 @@ int main() {
     cam2.projectPoints(p2_img,p2);
 
     auto valid_ids=get_valid_ids(p1_img,p2_img);
-    /*
-        prints to test the pruning 
-    std::cout << "before:\n";
-    for(const auto& el : p1_img)
-        std::cout << el.transpose() << std::endl;
-    std::cout << std::endl;
-    for(const auto& el : p2_img)
-        std::cout << el.transpose() << std::endl;
-    */
+    
+    //     prints to test the pruning 
+    // std::cout << "before:\n";
+    // for(const auto& el : p1_img)
+    //     std::cout << el.transpose() << std::endl;
+    // std::cout << std::endl;
+    // for(const auto& el : p2_img)
+    //     std::cout << el.transpose() << std::endl;
+    
     prune_projections(p1_img,p2_img,valid_ids);
 
-    /*
-        prints to test the pruning 
-    std::cout << "after:\n";
-    for(const auto& el : p1_img)
-        std::cout << el.transpose() << std::endl;
-    std::cout << std::endl;
-    for(const auto& el : p2_img)
-        std::cout << el.transpose() << std::endl;
-    */
+    
+    //     prints to test the pruning 
+    // std::cout << "after:\n";
+    // for(const auto& el : p1_img)
+    //     std::cout << el.transpose() << std::endl;
+    // std::cout << std::endl;
+    // for(const auto& el : p2_img)
+    //     std::cout << el.transpose() << std::endl;
+    
+    //  Test triangulate points
+
+    // std::cout << "World points to triangulate:\n";
+    // for(const auto& el : p1_img){
+    //     const int id = el(0);
+    //     std::cout << p1[id].transpose() << std::endl;
+    // }
+
+    // Vector4fVector triangulated;
+    // const int n=triangulate_points(k,X_gt,p1_img,p2_img,triangulated);
+    // std::cout << "n: " << n << std::endl;
+    // std::cout << "Triangulated points:\n ";
+    // for(const auto& el : triangulated)
+    //     std::cout << el.transpose() << std::endl;
+    // std::cout << "World points to triangulate: " << p1_img.size() << ", successfully triangulated: " << n << std::endl;
+    
 
     const Eigen::Matrix3f E_gt = transform2essential(X_gt);
 
@@ -130,22 +147,7 @@ int main() {
     const Eigen::Vector3f t_gt=X_gt.translation();
     for (int i=0;i<3;i++)
         std::cout << t_est(i)/t_gt(i) << std::endl;
-    /* Test triangulate points
-
-    std::cout << "World points to triangulate:\n";
-    for(const auto& el : p1_img){
-        const int id = el(0);
-        std::cout << p1[id].transpose() << std::endl;
-    }
-
-    Vector4fVector triangulated;
-    const int n=triangulate_points(k,X_gt,p1_img,p2_img,triangulated);
-    std::cout << "n: " << n << std::endl;
-    std::cout << "Triangulated points:\n ";
-    for(const auto& el : triangulated)
-        std::cout << el.transpose() << std::endl;
-    std::cout << "World points to triangulate: " << p1_img.size() << ", successfully triangulated: " << n << std::endl;
-    */
+    
     //Testing with synthetic data------------------------------------------------------------------------------end
     return 0;
 }
