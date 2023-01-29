@@ -190,3 +190,102 @@ void generate_points3d(const Eigen::Isometry3f& X,const int& num_points, Vector3
         p2.push_back(X*p);
     }
 }
+
+const IsometryPair essential2transformPair(const Eigen::Matrix3f& E){
+    const Eigen::Matrix3f w((Eigen::Matrix3f() << 0.f, -1.f, 0.f,
+                                                 1.f, 0.f, 0.f,
+                                                 0.f, 0.f, 1.f).finished());
+    //1st solution                                
+    const Eigen::JacobiSVD<Eigen::Matrix3f> svd(E,Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::Matrix3f v=svd.matrixV();
+    Eigen::Matrix3f u=svd.matrixU();
+    Eigen::Matrix3f R1=v*w*u.transpose();
+    if(R1.determinant()<0){
+        const Eigen::JacobiSVD<Eigen::Matrix3f> svd(-E, Eigen::ComputeFullU | Eigen::ComputeFullV);
+        v=svd.matrixV();
+        u=svd.matrixU();
+        R1=v*w*u.transpose();
+    }
+    Eigen::Isometry3f X1;
+    X1.linear()=R1;
+    Eigen::Matrix3f t_skew=R1*E;
+    X1.translation()=Eigen::Vector3f(t_skew(2,1)-t_skew(1,2),t_skew(0,2)-t_skew(2,0),t_skew(1,0)-t_skew(0,1));
+
+    //2nd solution
+    Eigen::Matrix3f R2=v*w.transpose()*u.transpose();
+    Eigen::Isometry3f X2;
+    X2.linear()=R2;
+    t_skew=R2*E;
+    X2.translation()=Eigen::Vector3f(t_skew(2,1)-t_skew(1,2),t_skew(0,2)-t_skew(2,0),t_skew(1,0)-t_skew(0,1));
+    IsometryPair X12(X1,X2);
+    return X12;
+}
+
+bool triangulate_point(const Eigen::Vector3f& d1,const Eigen::Vector3f& d2,const Eigen::Vector3f& p2,Eigen::Vector3f& p){
+    Eigen::Matrix<float,3,2> D;
+    D.col(0)=-d1;
+    D.col(1)=d2;
+    const Eigen::Vector2f ss=-(D.transpose() * D).ldlt().solve(D.transpose() * p2);
+    if(ss(0)<0 || ss(1)<0)
+        return false;
+
+    const Eigen::Vector3f p1_triangulated=ss(0)*d1;
+    const Eigen::Vector3f p2_triangulated=p2+ss(1)*d2;
+    //std::cout << "error: " << (p1_triangulated-p2_triangulated).norm() << std::endl;
+    p=0.5f*(p1_triangulated+p2_triangulated);
+    return true;
+}
+
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const Vector3fVector& p1_img, const Vector3fVector& p2_img, Vector4fVector& triangulated){
+    const Eigen::Isometry3f iX = X.inverse();
+    const Eigen::Matrix3f iK = k.inverse();
+    const Eigen::Matrix3f iRiK = iX.linear()*iK;
+    const Eigen::Vector3f t= iX.translation();
+    const int num_points=p1_img.size();
+    int n_success=0;
+    for(int i=0;i<num_points;i++){
+        Eigen::Vector3f d1;
+        d1 << p1_img[i].tail<2>(),1;
+        d1 = iK*d1;
+        Eigen::Vector3f d2;
+        d2 << p2_img[i].tail<2>(),1;
+        d2 = iRiK*d2;
+        Eigen::Vector3f p;
+        if(triangulate_point(d1,d2,t,p)){
+            n_success++;
+            triangulated.push_back((Eigen::Vector4f() << p1_img[i].head<1>(),p).finished());
+        }
+    } 
+    return n_success;
+}
+const Eigen::Isometry3f most_consistent_transform(const Eigen::Matrix3f k,const IsometryPair X12,const Vector3fVector& p1_img, const Vector3fVector& p2_img){
+    int n_test=0,n_in_front=0;
+    Eigen::Isometry3f X_best;
+    Vector4fVector triang;
+    Eigen::Isometry3f X_test=std::get<0>(X12);
+    n_test=triangulate_points(k,X_test,p1_img,p2_img,triang);
+    if (n_test > n_in_front){
+        n_in_front=n_test;
+        X_best=X_test;
+    }
+    X_test.translation()=-X_test.translation().eval();
+    n_test=triangulate_points(k,X_test,p1_img,p2_img,triang);
+    if (n_test > n_in_front){
+        n_in_front=n_test;
+        X_best=X_test;
+    }
+
+    X_test=std::get<1>(X12);
+    n_test=triangulate_points(k,X_test,p1_img,p2_img,triang);
+    if (n_test > n_in_front){
+        n_in_front=n_test;
+        X_best=X_test;
+    }
+    X_test.translation()=-X_test.translation().eval();
+    n_test=triangulate_points(k,X_test,p1_img,p2_img,triang);
+    if (n_test > n_in_front){
+        n_in_front=n_test;
+        X_best=X_test;
+    }
+    return X_best;
+}

@@ -55,3 +55,30 @@ void generate_isometry3f(Eigen::Isometry3f& X);
 
 // writes in p1 num_points randomly generated points, and then in p2 writes the same points but transformed by X
 void generate_points3d(const Eigen::Isometry3f& X,const int& num_points, Vector3fVector& p1, Vector3fVector& p2);
+
+// given the essential matrix E, returns a pair of transformation matrix retrieved from E
+const IsometryPair essential2transformPair(const Eigen::Matrix3f& E);
+
+// triangulates a point, finding the intersection of two lines
+// one passing through the origin, and having
+// direction vector d1
+// one passing through a point p2, and having
+// direction d2
+bool triangulate_point(const Eigen::Vector3f& d1,const Eigen::Vector3f& d2,const Eigen::Vector3f& p2,Eigen::Vector3f& p);
+
+// params:
+// - k: camera matrix
+// - X: relative pose of the first pose expressed in the frame of the second
+// - p1_img: points on the image acquired from the first pose
+// - p2_img: points on the image acquired from the second pose
+// - triangulated: there will be the triangulated points
+// returns: the number of triangulated points
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const Vector3fVector& p1_img, const Vector3fVector& p2_img, Vector4fVector& triangulated);
+
+// params:
+// - k: camera matrix
+// - X12: a pair of relative poses that describe the first pose expressed in the frame of the second, extracted from the essential
+// - p1_img: points on the image acquired from the first pose
+// - p2_img: points on the image acquired from the second pose
+// returns: the most consistent pose according to the number of successfully triangulated points
+const Eigen::Isometry3f most_consistent_transform(const Eigen::Matrix3f k,const IsometryPair X12,const Vector3fVector& p1_img, const Vector3fVector& p2_img);

@@ -53,8 +53,8 @@ int main() {
 
     //Testing with synthetic data------------------------------------------------------------------------------start
     
-    Eigen::Isometry3f X;
-    generate_isometry3f(X);
+    Eigen::Isometry3f X_gt;
+    generate_isometry3f(X_gt);
 
     Vector3fVector p1;
     Vector3fVector p2;
@@ -67,7 +67,7 @@ int main() {
     p2.push_back(X*(*(p1.begin()+1)));
     p2.push_back(X*(*(p1.begin()+2)));
     */
-    generate_points3d(X,90,p1,p2);
+    generate_points3d(X_gt,90,p1,p2);
     write_eigen_vectors_to_file("p1.txt",p1);
     write_eigen_vectors_to_file("p2.txt",p2);
 
@@ -84,7 +84,8 @@ int main() {
     cam2.projectPoints(p2_img,p2);
 
     auto valid_ids=get_valid_ids(p1_img,p2_img);
-    /*prints to test the pruning 
+    /*
+        prints to test the pruning 
     std::cout << "before:\n";
     for(const auto& el : p1_img)
         std::cout << el.transpose() << std::endl;
@@ -94,7 +95,8 @@ int main() {
     */
     prune_projections(p1_img,p2_img,valid_ids);
 
-    /*prints to test the pruning 
+    /*
+        prints to test the pruning 
     std::cout << "after:\n";
     for(const auto& el : p1_img)
         std::cout << el.transpose() << std::endl;
@@ -102,21 +104,48 @@ int main() {
     for(const auto& el : p2_img)
         std::cout << el.transpose() << std::endl;
     */
-    const Eigen::Matrix3f E_gt = transform2essential(X);
+
+    const Eigen::Matrix3f E_gt = transform2essential(X_gt);
 
     const Eigen::Matrix3f E_est=estimate_essential(p1_img,p2_img,k);
     
-    Eigen::JacobiSVD<Eigen::Matrix3f> svd_(E_est);
-    std::cout << "Singular values of estimated E: " << svd_.singularValues().transpose() << std::endl;
+    Eigen::JacobiSVD<Eigen::Matrix3f> svd(E_est);
     
     std::cout << "E_gt:\n" << E_gt << std::endl << std::endl;
     std::cout << "E_est:\n" << E_est << std::endl << std::endl;
+    std::cout << "Ratio of the essentials:\n";
     for (int i=0;i<3;i++){
         for(int j=0;j<3;j++)
             std::cout << E_est(i,j)/E_gt(i,j) << " ";
         std::cout << std::endl;
     }
-    
+    std::cout << std::endl;
+    const IsometryPair X_est12=essential2transformPair(E_est);
+    const Eigen::Isometry3f X_est = most_consistent_transform(k,X_est12,p1_img,p2_img);
+
+    std::cout << "R estimated:\n" << X_est.linear() << std::endl;
+    std::cout << "R gt:\n" << X_gt.linear() << std::endl;
+    std::cout << "t ratio:\n" << std::endl;
+    const Eigen::Vector3f t_est=X_est.translation();
+    const Eigen::Vector3f t_gt=X_gt.translation();
+    for (int i=0;i<3;i++)
+        std::cout << t_est(i)/t_gt(i) << std::endl;
+    /* Test triangulate points
+
+    std::cout << "World points to triangulate:\n";
+    for(const auto& el : p1_img){
+        const int id = el(0);
+        std::cout << p1[id].transpose() << std::endl;
+    }
+
+    Vector4fVector triangulated;
+    const int n=triangulate_points(k,X_gt,p1_img,p2_img,triangulated);
+    std::cout << "n: " << n << std::endl;
+    std::cout << "Triangulated points:\n ";
+    for(const auto& el : triangulated)
+        std::cout << el.transpose() << std::endl;
+    std::cout << "World points to triangulate: " << p1_img.size() << ", successfully triangulated: " << n << std::endl;
+    */
     //Testing with synthetic data------------------------------------------------------------------------------end
     return 0;
 }
