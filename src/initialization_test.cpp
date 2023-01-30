@@ -68,7 +68,7 @@ int main() {
     // p2.push_back(X*(*(p1.begin()+1)));
     // p2.push_back(X*(*(p1.begin()+2)));
     
-    generate_points3d(X_gt,90,p1,p2);
+    generate_points3d(X_gt,90,p1,p2); //we choose to ignore p2 for the computations. The transformation of p1 by X_gt is done when projecting in the second camera.
     write_eigen_vectors_to_file("p1.txt",p1);
     write_eigen_vectors_to_file("p2.txt",p2);
 
@@ -77,12 +77,14 @@ int main() {
         0.f,100.f,240.f,
         0.f,0.f,1.f;
     Camera cam(480,640,0,10,k);
-    Camera cam2(480,640,0,10,k);
+    Camera cam2(480,640,0,10,k,X_gt);
     
     Vector3fVector p1_img;
     Vector3fVector p2_img;
     cam.projectPoints(p1_img,p1);
-    cam2.projectPoints(p2_img,p2);
+    cam2.projectPoints(p2_img,p1);
+
+    //Now we have generated the synthetic measurements p1_img and p2_img
 
     auto valid_ids=get_valid_ids(p1_img,p2_img);
     
@@ -128,15 +130,15 @@ int main() {
     
     Eigen::JacobiSVD<Eigen::Matrix3f> svd(E_est);
     
-    std::cout << "E_gt:\n" << E_gt << std::endl << std::endl;
-    std::cout << "E_est:\n" << E_est << std::endl << std::endl;
-    std::cout << "Ratio of the essentials:\n";
-    for (int i=0;i<3;i++){
-        for(int j=0;j<3;j++)
-            std::cout << E_est(i,j)/E_gt(i,j) << " ";
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
+    // std::cout << "E_gt:\n" << E_gt << std::endl << std::endl;
+    // std::cout << "E_est:\n" << E_est << std::endl << std::endl;
+    // std::cout << "Ratio of the essentials:\n";
+    // for (int i=0;i<3;i++){
+    //     for(int j=0;j<3;j++)
+    //         std::cout << E_est(i,j)/E_gt(i,j) << " ";
+    //     std::cout << std::endl;
+    // }
+    // std::cout << std::endl;
     const IsometryPair X_est12=essential2transformPair(E_est);
     const Eigen::Isometry3f X_est = most_consistent_transform(k,X_est12,p1_img,p2_img);
 
@@ -148,6 +150,10 @@ int main() {
     for (int i=0;i<3;i++)
         std::cout << t_est(i)/t_gt(i) << std::endl;
     
+    Vector4fVector triangulated_world_points;
+    const int n=triangulate_points(k,X_est,p1_img,p2_img,triangulated_world_points);
+
+    write_eigen_vectors_to_file("p_triang.txt",triangulated_world_points);
     //Testing with synthetic data------------------------------------------------------------------------------end
     return 0;
 }

@@ -1,15 +1,5 @@
 #include "files_utils.h"
-void write_eigen_vectors_to_file(const std::string& file_path, const Vector3fVector& vectors) {
-    std::ofstream output_file(file_path);
-    if(!output_file.is_open()) {
-        std::cout << "Error opening file" << std::endl;
-        return;
-    }
-    for(const auto& vector : vectors)
-        output_file << vector.transpose() << std::endl;
-    
-    output_file.close();
-}
+
 bool get_file_names(const std::string& path, std::set<std::string>& files,const std::regex& pattern){
     DIR *dir;
     struct dirent *ent;

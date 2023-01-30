@@ -8,12 +8,22 @@
 #include <sstream>
 #include "defs.h"
 
-//! writes 3d vectors to a file, one for each row. They are to be used in gnuplot, e.g.
+//! writes Eigen vectors to a file, one for each row. They are to be used in gnuplot, e.g.
 //! splot "p1.txt" u 1:2:3 w p pt 7,"p2.txt" u 1:2:3 w p pt 7 lt rgb "#FF0000"
 //! @param file_path: path to the file where to write the vectors
-//! @param vectors: vector of 3d vectors Eigen to be writen in the file, one for each row
-void write_eigen_vectors_to_file(const std::string& file_path, const Vector3fVector& vectors);
-
+//! @param vectors: vector of vectors of type Eigen to be writen in the file, one for each row
+template <typename vec_type>
+void write_eigen_vectors_to_file(const std::string& file_path, const std::vector<vec_type,Eigen::aligned_allocator<vec_type>>& vectors){
+    std::ofstream output_file(file_path);
+    if(!output_file.is_open()) {
+        std::cout << "Error opening file" << std::endl;
+        return;
+    }
+    for(const auto& vector : vectors)
+        output_file << vector.transpose() << std::endl;
+    
+    output_file.close();
+}
 //! writes in files the file names (in alphabetical order) found in path that match the regex
 //! @param path: path where to look for the files
 //! @param files: it will contain the file names that match the regex in alphabetical order
