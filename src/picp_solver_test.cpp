@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "files_utils.h"
 #include "camera.h"
+#include "picp_solver.h"
 
 void computeFakeCorrespondences(IntPairVector& correspondences,
 				const Vector2fVector reference_image_points,
@@ -50,39 +51,26 @@ int main() {
     cam.projectPoints(current_measurements,world_points,true);
 
     //Now we have generated the synthetic measurements reference_image_points and current_measurements
-    
+
     IntPairVector correspondences;
     computeFakeCorrespondences(correspondences, reference_image_points, current_measurements);
 
-    // Essential estimation
-    
-    //const Eigen::Matrix3f E_est=estimate_essential(k,correspondences,reference_image_points,current_measurements);
-    
-    //Eigen::JacobiSVD<Eigen::Matrix3f> svd(E_est);
+    Vector6f disturbance;
+    disturbance << 0.1f,0.2f,0.3f,0.1f,0.1f,0.2f;
+    cam.setWorldInCameraPose(X_gt*v2tEuler(disturbance));
 
-    // const Eigen::Matrix3f E_gt = transform2essential(X_gt);
-    // std::cout << "E_gt:\n" << E_gt << std::endl << std::endl;
-    // std::cout << "E_est:\n" << E_est << std::endl << std::endl;
-    // std::cout << "Ratio of the essentials:\n";
-    // for (int i=0;i<3;i++){
-    //     for(int j=0;j<3;j++)
-    //         std::cout << E_est(i,j)/E_gt(i,j) << " ";
-    //     std::cout << std::endl;
-    // }
-    // std::cout << std::endl;
+    PICPSolver solver;
+    solver.setKernelThreshold(10000);
+    solver.init(cam,world_points,current_measurements);
+    for(int i=0;i<30;i++)
+        solver.oneRound(correspondences,false);
 
-    const Eigen::Isometry3f X_est = estimate_transform(k, correspondences,reference_image_points,current_measurements);
-    std::cout << "R estimated:\n" << X_est.linear() << std::endl;
-    std::cout << "R gt:\n" << X_gt.linear() << std::endl;
-    std::cout << "t ratio:\n" << std::endl;
-    const Eigen::Vector3f t_est=X_est.translation();
-    const Eigen::Vector3f t_gt=X_gt.translation();
-    for (int i=0;i<3;i++)
-        std::cout << t_est(i)/t_gt(i) << std::endl;
-    
-    Vector3fVector triangulated_world_points;
-    triangulate_points(k,X_est,correspondences,reference_image_points,current_measurements,triangulated_world_points);
-
-    write_eigen_vectors_to_file("p_triang.txt",triangulated_world_points);
+    cam=solver.camera();
+    std::cout << "R estimated:\n";
+    std::cout << cam.worldInCameraPose().linear() << std::endl;
+    std::cout << "t estimated: " << cam.worldInCameraPose().translation().transpose() << std::endl;
+    std::cout << "R gt:\n";
+    std::cout << X_gt.linear() << std::endl;
+    std::cout << "t gt: " << X_gt.translation().transpose() << std::endl;
     return 0;
 }

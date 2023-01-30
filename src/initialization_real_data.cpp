@@ -33,7 +33,7 @@ Vector2fVector strip_id(const Vector3fVector& p_withid){
 }
 
 int main() {
-    // Real data ------------------------------------------------------------------------start
+    // Using real data 
     
     const std::string path="/home/luca/vo_data/data/";
     const std::regex pattern("^meas-\\d.*\\.dat$");
@@ -85,6 +85,5 @@ int main() {
     std::cout << "R estimated:\n" << X.linear() << std::endl;
     std::cout << "t estimated:\n" << X.translation().transpose() << std::endl;
 
-    
-    // Real data ----------------------------------------------------------------------------------------------end
+    return 0;
 }

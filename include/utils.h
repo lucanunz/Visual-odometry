@@ -5,9 +5,76 @@
 #include <random>
 #include "defs.h"
 
+//! computes the rotation matrix around the x axis
+//! @param angle: angle of rotation
+//! @returns the rotation matrix
+template <typename Scalar_>
+Eigen::Matrix<Scalar_,3,3> RotationX(const Scalar_& angle) {
+  Eigen::Matrix<Scalar_,3,3> R;
+  const Scalar_ s=sin(angle);
+  const Scalar_ c=cos(angle);
+  const Scalar_ one(1.);
+  const Scalar_ zero(0.);
+  R << 
+    one, zero, zero,
+    zero, c, -s,
+    zero, s, c;
+  return R;
+}
+//! computes the rotation matrix around the y axis
+//! @param angle: angle of rotation
+//! @returns the rotation matrix
+template <typename Scalar_>
+Eigen::Matrix<Scalar_,3,3> RotationY(const Scalar_& angle) {
+  Eigen::Matrix<Scalar_,3,3> R;
+  const Scalar_ s=sin(angle);
+  const Scalar_ c=cos(angle);
+  const Scalar_ one(1.);
+  const Scalar_ zero(0.);
+  R << 
+    c, zero, s,
+    zero, one, zero,
+    -s, zero, c;
+  return R;
+}
+//! computes the rotation matrix around the z axis
+//! @param angle: angle of rotation
+//! @returns the rotation matrix
+template <typename Scalar_>
+Eigen::Matrix<Scalar_,3,3> RotationZ(const Scalar_& angle) {
+  Eigen::Matrix<Scalar_,3,3> R;
+  const Scalar_ s=sin(angle);
+  const Scalar_ c=cos(angle);
+  const Scalar_ one(1.);
+  const Scalar_ zero(0.);
+  R << 
+    c, -s, zero,
+    s, c, zero,
+    zero, zero, one;
+  return R;
+}
+//! computes a rotation matrix given xyz euler angles
+//! @param angle: angles of rotation
+//! @returns the rotation matrix
+template <typename Scalar_>
+Eigen::Matrix<Scalar_,3,3> Rotation(const Eigen::Matrix<Scalar_,3,1>& angles) {
+  return RotationX(angles.x())*RotationY(angles.y())*RotationZ(angles.z());
+}
+
+//! computes an isometry from the 6dim vector (x y z th_x th_y th_z)
+//! where the angles are considered to be euler angles
+//! @param v: 6dim vector
+//! @returns the computed isometry
+inline Eigen::Isometry3f v2tEuler(const Vector6f& v){
+  Eigen::Isometry3f T;
+  T.linear()=Rotation(Eigen::Vector3f(v.tail<3>()));
+  T.translation()=v.head<3>();
+  return T;
+}
+
 //! computes the eigenvector associated to the smallest eigenvalue of a given matrix
 //! @param m: matrix of which to compute the eigenvectors
-//! @returns the the eigenvector associated to the smallest eigenvalueof m
+//! @returns the eigenvector associated to the smallest eigenvalueof m
 template <typename SquareMatrixType_>
 Eigen::Matrix<typename SquareMatrixType_::Scalar,
               SquareMatrixType_::RowsAtCompileTime, 1>
@@ -21,20 +88,26 @@ smallestEigenVector(const SquareMatrixType_& m) {
 //! computes the skewsymm matrix associated to v
 //! @param v: 3 dimensional vector to generate the 3x3 matrix
 //! @returns the skew symmetric matrix computed from v
-Eigen::Matrix3f skew(const Eigen::Vector3f& v);
+inline Eigen::Matrix3f skew(const Eigen::Vector3f& v){
+  Eigen::Matrix3f ret;
+  ret << 0,-v(2),v(1),
+      v(2),0,-v(0),
+      -v(1),v(0),0;
+  return ret;
+}
 
-//! generates a random 3d transformation
+//! generates a random homogeneous transformation in 3D
 //! @param X: isometry3f where to write the random transformation
 void generate_isometry3f(Eigen::Isometry3f& X);
 
-//! generates two set of random points in the 3d space. The second is equal to the first one transformed by X
+//! generates two set of random points in the 3D space. The second is equal to the first one transformed by X
 //! @param X: isometry3f that is used to transform p1, getting p2
 //! @param num_points: number of points to generate
 //! @param p1: first set of points
 //! @param p2: second set of points
 void generate_points3d(const Eigen::Isometry3f& X,const int& num_points, Vector3fVector& p1, Vector3fVector& p2);
 
-//! returns the ids only of the points that are present in both sets. The sets contains 3d projected vectors: id-col-row.
+//! returns the ids only of the points that are present in both sets. The sets contains 3D projected vectors: id-col-row.
 //! @param p1_img: points in the first image, with their id
 //! @param p2_img: points in the second image, with their id
 //! @returns the set of valid ids

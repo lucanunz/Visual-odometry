@@ -6,8 +6,14 @@
 
 typedef Eigen::Matrix<float, 10, 1> Vector10f;
 typedef Eigen::Matrix<float, 9, 1> Vector9f;
+typedef Eigen::Matrix<float, 6, 1> Vector6f;
 typedef Eigen::Matrix<float, 1, 9> RowVector9f;
 typedef Eigen::Matrix<float, 9, 9> Matrix9f;
+typedef Eigen::Matrix<float, 2, 3> Matrix2_3f;
+typedef Eigen::Matrix<float, 2, 6> Matrix2_6f;
+typedef Eigen::Matrix<float, 6, 6> Matrix6f;
+typedef Eigen::Matrix<float, 3, 6> Matrix3_6f;
+
 typedef std::pair<Eigen::Isometry3f,Eigen::Isometry3f> IsometryPair;
 typedef std::pair<int,int> IntPair;
 typedef std::vector<IntPair > IntPairVector;

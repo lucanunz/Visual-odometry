@@ -1,13 +1,5 @@
 #include "utils.h"
 
-Eigen::Matrix3f skew(const Eigen::Vector3f& v){
-    Eigen::Matrix3f ret;
-    ret << 0,-v(2),v(1),
-        v(2),0,-v(0),
-        -v(1),v(0),0;
-    return ret;
-}
-
 std::unordered_set<int> get_valid_ids(const Vector3fVector& p1_img, const Vector3fVector& p2_img){
     std::unordered_set<int> ids;
     for(const auto& el1 : p1_img){
