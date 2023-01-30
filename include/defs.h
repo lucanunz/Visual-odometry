@@ -9,6 +9,8 @@ typedef Eigen::Matrix<float, 9, 1> Vector9f;
 typedef Eigen::Matrix<float, 1, 9> RowVector9f;
 typedef Eigen::Matrix<float, 9, 9> Matrix9f;
 typedef std::pair<Eigen::Isometry3f,Eigen::Isometry3f> IsometryPair;
+typedef std::pair<int,int> IntPair;
+typedef std::vector<IntPair > IntPairVector;
 
 typedef std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > Vector4fVector;
 typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;

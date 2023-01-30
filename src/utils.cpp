@@ -41,30 +41,32 @@ const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X){
     return E;
 }
 
-const Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fVector& p2_img, const Eigen::Matrix3f& k){
-    if(p1_img.size()<8){
+const Eigen::Matrix3f estimate_essential(const Eigen::Matrix3f& k, const IntPairVector& correspondences, const Vector2fVector& p1_img, const Vector2fVector& p2_img){
+    if(correspondences.size()<8){
         std::cout << "Less than 8 points\n";
         return Eigen::Matrix3f::Zero();
     }
-    if(p1_img.size() != p2_img.size()){
-        std::cout << "Inconsistent points to estimate essential\n";
-        return Eigen::Matrix3f::Zero();
-    }
+
     Matrix9f H=Matrix9f::Zero();
     const auto iK=k.inverse();
-    const int n=p1_img.size();
-    for(int i=0;i<n;i++){
+    for (const IntPair& correspondence: correspondences){
+        const int idx_first=correspondence.first;
+        const int idx_second=correspondence.second;
         Eigen::Vector3f d1;
-        d1 << p1_img[i].tail<2>(),1;
+        d1 << p1_img[idx_first],1;
         d1 = iK*d1;
+
         Eigen::Vector3f d2;
-        d2 << p2_img[i].tail<2>(),1;
+        d2 << p2_img[idx_second],1;
         d2 = iK*d2;
+
         const Eigen::Matrix3f m=d1*d2.transpose();
+
         RowVector9f A;
         A << m(0,0),m(0,1),m(0,2),m(1,0),m(1,1),m(1,2),m(2,0),m(2,1),m(2,2);
         H.noalias()+=A.transpose()*A;
     }
+
     Vector9f e=smallestEigenVector(H);
     Eigen::Matrix3f E;
     E << e(0),e(1),e(2),
@@ -144,53 +146,62 @@ bool triangulate_point(const Eigen::Vector3f& d1,const Eigen::Vector3f& d2,const
     return true;
 }
 
-int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const Vector3fVector& p1_img, const Vector3fVector& p2_img, Vector4fVector& triangulated){
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
+                        const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated){
     const Eigen::Isometry3f iX = X.inverse();
     const Eigen::Matrix3f iK = k.inverse();
     const Eigen::Matrix3f iRiK = iX.linear()*iK;
     const Eigen::Vector3f t= iX.translation();
-    const int num_points=p1_img.size();
     int n_success=0;
-    for(int i=0;i<num_points;i++){
+
+    for (const IntPair& correspondence: correspondences){
+        const int idx_first=correspondence.first;
+        const int idx_second=correspondence.second;
         Eigen::Vector3f d1;
-        d1 << p1_img[i].tail<2>(),1;
+        d1 << p1_img[idx_first],1;
         d1 = iK*d1;
         Eigen::Vector3f d2;
-        d2 << p2_img[i].tail<2>(),1;
+        d2 << p2_img[idx_second],1;
         d2 = iRiK*d2;
         Eigen::Vector3f p;
         if(triangulate_point(d1,d2,t,p)){
             n_success++;
-            triangulated.push_back((Eigen::Vector4f() << p1_img[i].head<1>(),p).finished());
+            //triangulated.push_back((Eigen::Vector4f() << p1_img[i].head<1>(),p).finished());
+            triangulated.push_back(p);
         }
     } 
     return n_success;
 }
-const Eigen::Isometry3f most_consistent_transform(const Eigen::Matrix3f k,const IsometryPair X12,const Vector3fVector& p1_img, const Vector3fVector& p2_img){
+
+const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 
+                                            const Vector2fVector& p1_img, const Vector2fVector& p2_img){    
+    const Eigen::Matrix3f E=estimate_essential(k,correspondences,p1_img,p2_img);
+    const IsometryPair X12=essential2transformPair(E);
+
     int n_test=0,n_in_front=0;
     Eigen::Isometry3f X_best;
-    Vector4fVector triang;
+    Vector3fVector triang;
     Eigen::Isometry3f X_test=std::get<0>(X12);
-    n_test=triangulate_points(k,X_test,p1_img,p2_img,triang);
+    n_test=triangulate_points(k,X_test,correspondences,p1_img,p2_img,triang);
     if (n_test > n_in_front){
         n_in_front=n_test;
         X_best=X_test;
     }
     X_test.translation()=-X_test.translation().eval();
-    n_test=triangulate_points(k,X_test,p1_img,p2_img,triang);
+    n_test=triangulate_points(k,X_test,correspondences,p1_img,p2_img,triang);
     if (n_test > n_in_front){
         n_in_front=n_test;
         X_best=X_test;
     }
 
     X_test=std::get<1>(X12);
-    n_test=triangulate_points(k,X_test,p1_img,p2_img,triang);
+    n_test=triangulate_points(k,X_test,correspondences,p1_img,p2_img,triang);
     if (n_test > n_in_front){
         n_in_front=n_test;
         X_best=X_test;
     }
     X_test.translation()=-X_test.translation().eval();
-    n_test=triangulate_points(k,X_test,p1_img,p2_img,triang);
+    n_test=triangulate_points(k,X_test,correspondences,p1_img,p2_img,triang);
     if (n_test > n_in_front){
         n_in_front=n_test;
         X_best=X_test;

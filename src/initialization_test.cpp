@@ -2,6 +2,27 @@
 #include "utils.h"
 #include "files_utils.h"
 #include "camera.h"
+
+void computeFakeCorrespondences(IntPairVector& correspondences,
+				const Vector2fVector reference_image_points,
+				const Vector2fVector current_image_points){
+    correspondences.resize(current_image_points.size());
+    int num_correspondences=0;
+    assert(reference_image_points.size()==current_image_points.size());
+  
+    for (size_t i=0; i<reference_image_points.size(); i++){
+        const Eigen::Vector2f& reference_point=reference_image_points[i];
+        const Eigen::Vector2f& current_point=current_image_points[i];
+        IntPair& correspondence=correspondences[num_correspondences];
+        if (reference_point.x()<0 || current_point.x()<0) //if one of them is the invalid point
+            continue;
+        correspondence.first=i;
+        correspondence.second=i;
+        num_correspondences++;
+    }
+    correspondences.resize(num_correspondences);
+}
+
 int main() {
     // Real data ------------------------------------------------------------------------start
     /*
@@ -57,79 +78,36 @@ int main() {
     Eigen::Isometry3f X_gt;
     generate_isometry3f(X_gt);
 
-    Vector3fVector p1;
-    Vector3fVector p2;
+    Vector3fVector world_points, world_points_transformed;
     
-    //     data to test the projections
-    // p1.push_back(Eigen::Vector3f(0,0,3));
-    // p1.push_back(Eigen::Vector3f(1,1,3));
-    // p1.push_back(Eigen::Vector3f(0,0,11));
-    // p2.push_back(X*(*p1.begin()));
-    // p2.push_back(X*(*(p1.begin()+1)));
-    // p2.push_back(X*(*(p1.begin()+2)));
-    
-    generate_points3d(X_gt,90,p1,p2); //we choose to ignore p2 for the computations. The transformation of p1 by X_gt is done when projecting in the second camera.
-    write_eigen_vectors_to_file("p1.txt",p1);
-    write_eigen_vectors_to_file("p2.txt",p2);
+    generate_points3d(X_gt,90,world_points,world_points_transformed); //we choose to ignore the second argument
+    write_eigen_vectors_to_file("world_points.txt",world_points);
+    write_eigen_vectors_to_file("world_points_transformed.txt",world_points_transformed);
 
     Eigen::Matrix3f k;
-    k << 100.f,0.f,320.f,
-        0.f,100.f,240.f,
+    k << 150.f,0.f,320.f,
+        0.f,150.f,240.f,
         0.f,0.f,1.f;
     Camera cam(480,640,0,10,k);
     Camera cam2(480,640,0,10,k,X_gt);
     
-    Vector3fVector p1_img;
-    Vector3fVector p2_img;
-    cam.projectPoints(p1_img,p1);
-    cam2.projectPoints(p2_img,p1);
+    Vector2fVector reference_image_points;
+    Vector2fVector current_image_points;
 
-    //Now we have generated the synthetic measurements p1_img and p2_img
+    //since we keep indices, the i-th proj is the i-th world point.
+    cam.projectPoints(reference_image_points,world_points,true);
+    cam2.projectPoints(current_image_points,world_points,true);
 
-    auto valid_ids=get_valid_ids(p1_img,p2_img);
+    //Now we have generated the synthetic measurements reference_image_points and current_image_points
     
-    //     prints to test the pruning 
-    // std::cout << "before:\n";
-    // for(const auto& el : p1_img)
-    //     std::cout << el.transpose() << std::endl;
-    // std::cout << std::endl;
-    // for(const auto& el : p2_img)
-    //     std::cout << el.transpose() << std::endl;
-    
-    prune_projections(p1_img,p2_img,valid_ids);
+    IntPairVector correspondences;
+    computeFakeCorrespondences(correspondences, reference_image_points, current_image_points);
 
-    
-    //     prints to test the pruning 
-    // std::cout << "after:\n";
-    // for(const auto& el : p1_img)
-    //     std::cout << el.transpose() << std::endl;
-    // std::cout << std::endl;
-    // for(const auto& el : p2_img)
-    //     std::cout << el.transpose() << std::endl;
-    
-    //  Test triangulate points
-
-    // std::cout << "World points to triangulate:\n";
-    // for(const auto& el : p1_img){
-    //     const int id = el(0);
-    //     std::cout << p1[id].transpose() << std::endl;
-    // }
-
-    // Vector4fVector triangulated;
-    // const int n=triangulate_points(k,X_gt,p1_img,p2_img,triangulated);
-    // std::cout << "n: " << n << std::endl;
-    // std::cout << "Triangulated points:\n ";
-    // for(const auto& el : triangulated)
-    //     std::cout << el.transpose() << std::endl;
-    // std::cout << "World points to triangulate: " << p1_img.size() << ", successfully triangulated: " << n << std::endl;
-    
-
-    const Eigen::Matrix3f E_gt = transform2essential(X_gt);
-
-    const Eigen::Matrix3f E_est=estimate_essential(p1_img,p2_img,k);
+    const Eigen::Matrix3f E_est=estimate_essential(k,correspondences,reference_image_points,current_image_points);
     
     Eigen::JacobiSVD<Eigen::Matrix3f> svd(E_est);
-    
+
+    // const Eigen::Matrix3f E_gt = transform2essential(X_gt);
     // std::cout << "E_gt:\n" << E_gt << std::endl << std::endl;
     // std::cout << "E_est:\n" << E_est << std::endl << std::endl;
     // std::cout << "Ratio of the essentials:\n";
@@ -139,9 +117,8 @@ int main() {
     //     std::cout << std::endl;
     // }
     // std::cout << std::endl;
-    const IsometryPair X_est12=essential2transformPair(E_est);
-    const Eigen::Isometry3f X_est = most_consistent_transform(k,X_est12,p1_img,p2_img);
 
+    const Eigen::Isometry3f X_est = estimate_transform(k, correspondences,reference_image_points,current_image_points);
     std::cout << "R estimated:\n" << X_est.linear() << std::endl;
     std::cout << "R gt:\n" << X_gt.linear() << std::endl;
     std::cout << "t ratio:\n" << std::endl;
@@ -150,8 +127,8 @@ int main() {
     for (int i=0;i<3;i++)
         std::cout << t_est(i)/t_gt(i) << std::endl;
     
-    Vector4fVector triangulated_world_points;
-    const int n=triangulate_points(k,X_est,p1_img,p2_img,triangulated_world_points);
+    Vector3fVector triangulated_world_points;
+    triangulate_points(k,X_est,correspondences,reference_image_points,current_image_points,triangulated_world_points);
 
     write_eigen_vectors_to_file("p_triang.txt",triangulated_world_points);
     //Testing with synthetic data------------------------------------------------------------------------------end

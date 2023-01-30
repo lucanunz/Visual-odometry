@@ -37,11 +37,14 @@
     }
 
     //! projects a bunch of world points on the image
-    //! @param image_points: the points on the image with the associated id
-    //! @param world points: the input world points. The id of the i-th world point is i.
+    //! @param image_points: the points on the image
+    //! @param world points: the input world points
+    //! @param keep_indices: if true, image_points has the same size of world points
+    //! Invalid points are marked with (-1, -1). If false only the points in the set are returned
     //! @returns the number of points that fall inside the image
-    int projectPoints(Vector3fVector& image_points,
-                      const Vector3fVector& world_points);
+    int projectPoints(Vector2fVector& image_points,
+                      const Vector3fVector& world_points,
+                      bool keep_indices=false);
 
     inline const Eigen::Isometry3f& worldInCameraPose() const {return _world_in_camera_pose;}
     inline void setWorldInCameraPose(const Eigen::Isometry3f& pose)  {_world_in_camera_pose=pose;}

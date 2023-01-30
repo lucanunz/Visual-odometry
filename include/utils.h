@@ -51,11 +51,13 @@ void prune_projections(Vector3fVector& p1_img, Vector3fVector& p2_img,const std:
 const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X);
 
 //! estimate essential matrix from two sets of corresponding points. It assumes that the i-th element of p1_img matches the i-th in p2_img
-//! @param p1_img: points in the first image, with their id
-//! @param p2_img: points in the second image, with their id
 //! @param k: 3x3 camera matrix
+//! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
+//! @param p1_img: points in the first image
+//! @param p2_img: points in the second image
 //! @returns the essential matrix
-const Eigen::Matrix3f estimate_essential(const Vector3fVector& p1_img, const Vector3fVector& p2_img,const Eigen::Matrix3f& k);
+const Eigen::Matrix3f estimate_essential(const Eigen::Matrix3f& k, const IntPairVector& correspondences, 
+                                          const Vector2fVector& p1_img, const Vector2fVector& p2_img);
 
 //! given the essential matrix E, estimates a pair of transformation matrix retrieved from E
 //! @param E: essential matrix
@@ -68,24 +70,26 @@ const IsometryPair essential2transformPair(const Eigen::Matrix3f& E);
 //! @param d1: direction vector of first line
 //! @param d1: direction vector of second line
 //! @param p2: point on the second line
-//! @param p: intersection point
+//! @param p: will containt the intersection point
 //! @returns false if the triangulated point falls behind one of the cameras. In that case, the value of p is invalid.
 bool triangulate_point(const Eigen::Vector3f& d1,const Eigen::Vector3f& d2,const Eigen::Vector3f& p2,Eigen::Vector3f& p);
 
 //! triangulate points given their projections on two images, and the relative pose between the cameras
 //! @param k: 3x3 camera matrix
 //! @param X: relative pose of the first camera expressed in the frame of the second
-//! @param p1_img: points in the first image, with their id
-//! @param p2_img: points in the second image, with their id
-//! @param triangulated: this vector will contain the triangulated points, together with their id
+//! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
+//! @param p1_img: points in the first image
+//! @param p2_img: points in the second image
+//! @param triangulated: this vector will contain the triangulated points
 //! @returns the number of successfully triangulated points
-int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const Vector3fVector& p1_img, const Vector3fVector& p2_img, Vector4fVector& triangulated);
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
+                        const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated);
 
-//! given a pair of transformations estimated from the essential, it estimates the most consistent one
-//! by triangulating the points on the two images
+//! Estimates the relative pose of the first camera expressed in the frame of the second
 //! @param k: 3x3 camera matrix
-//! @param X12: a pair of relative poses that describe the first pose expressed in the frame of the second, extracted from the essential
-//! @param p1_img: points in the first image, with their id
-//! @param p2_img: points in the second image, with their id
+//! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
+//! @param p1_img: points in the first image
+//! @param p2_img: points in the second image
 //! @returns: the most consistent pose according to the number of successfully triangulated points
-const Eigen::Isometry3f most_consistent_transform(const Eigen::Matrix3f k,const IsometryPair X12,const Vector3fVector& p1_img, const Vector3fVector& p2_img);
+const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 
+                                            const Vector2fVector& p1_img, const Vector2fVector& p2_img);
