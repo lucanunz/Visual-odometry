@@ -24,17 +24,28 @@ void computeFakeCorrespondences(IntPairVector& correspondences,
     correspondences.resize(num_correspondences);
 }
 
+void print_comparison(const Eigen::Isometry3f& X_est, const Eigen::Isometry3f& X_gt,const std::string title={}){
+    if(!title.empty())
+        std::cout << title << std::endl;
+    std::cout <<"R estimated:\n";
+    std::cout << X_est.linear() << std::endl;
+    std::cout << "R gt:\n";
+    std::cout << X_gt.linear() << std::endl;
+    const Eigen::Vector3f t_est=X_est.translation();
+    const Eigen::Vector3f t_gt=X_gt.translation();
+    std::cout << "t_est: " << t_est.transpose();
+    std::cout << "\nt_gt: " << t_gt.transpose();
+    std::cout << std::endl;
+}
+
 int main() {
     //Testing with synthetic data
     
     Eigen::Isometry3f X_gt;
     generate_isometry3f(X_gt);
 
-    Vector3fVector world_points, world_points_transformed;
-    
-    generate_points3d(X_gt,90,world_points,world_points_transformed); //we choose to ignore the second argument
+    Vector3fVector world_points=generate_points3d(90);
     write_eigen_vectors_to_file("world_points.txt",world_points);
-    write_eigen_vectors_to_file("world_points_transformed.txt",world_points_transformed);
 
     Eigen::Matrix3f k;
     k << 150.f,0.f,320.f,
@@ -56,21 +67,16 @@ int main() {
     computeFakeCorrespondences(correspondences, reference_image_points, current_measurements);
 
     Vector6f disturbance;
-    disturbance << 0.1f,0.2f,0.3f,0.1f,0.1f,0.2f;
+    disturbance << 0.4f,0.2f,0.3f,0.2f,0.1f,0.2f;
     cam.setWorldInCameraPose(X_gt*v2tEuler(disturbance));
 
     PICPSolver solver;
     solver.setKernelThreshold(10000);
     solver.init(cam,world_points,current_measurements);
-    for(int i=0;i<30;i++)
+    for(int i=0;i<100;i++)
         solver.oneRound(correspondences,false);
-
+    
     cam=solver.camera();
-    std::cout << "R estimated:\n";
-    std::cout << cam.worldInCameraPose().linear() << std::endl;
-    std::cout << "t estimated: " << cam.worldInCameraPose().translation().transpose() << std::endl;
-    std::cout << "R gt:\n";
-    std::cout << X_gt.linear() << std::endl;
-    std::cout << "t gt: " << X_gt.translation().transpose() << std::endl;
+    print_comparison(cam.worldInCameraPose(),X_gt,"\n");
     return 0;
 }

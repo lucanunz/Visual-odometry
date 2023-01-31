@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "files_utils.h"
 #include "camera.h"
+#include "picp_solver.h"
 
 void computeFakeCorrespondences(IntPairVector& correspondences,
 				const Vector2fVector reference_image_points,
@@ -22,6 +23,7 @@ void computeFakeCorrespondences(IntPairVector& correspondences,
     }
     correspondences.resize(num_correspondences);
 }
+
 void print_comparison(const Eigen::Isometry3f& X_est, const Eigen::Isometry3f& X_gt,const std::string title={}){
     if(!title.empty())
         std::cout << title << std::endl;
@@ -39,11 +41,11 @@ void print_comparison(const Eigen::Isometry3f& X_est, const Eigen::Isometry3f& X
 int main() {
     //Testing with synthetic data
     
-    Eigen::Isometry3f X_gt;
-    generate_isometry3f(X_gt);
+    Eigen::Isometry3f X_gt1; //pose of the world(camera position 0) in the first camera
+    generate_isometry3f(X_gt1);
 
-    Vector3fVector world_points=generate_points3d(90);
-    write_eigen_vectors_to_file("world_points.txt",world_points);
+    Vector3fVector world_points_gt=generate_points3d(90);
+    write_eigen_vectors_to_file("world_points_gt.txt",world_points_gt);
 
     Eigen::Matrix3f k;
     k << 150.f,0.f,320.f,
@@ -55,37 +57,46 @@ int main() {
     Vector2fVector current_measurements;
 
     //since we keep indices, the i-th proj is the i-th world point.
-    cam.projectPoints(reference_image_points,world_points,true);
-    cam.setWorldInCameraPose(X_gt);
-    cam.projectPoints(current_measurements,world_points,true);
+    cam.projectPoints(reference_image_points,world_points_gt,true);
+    cam.setWorldInCameraPose(X_gt1);
+    cam.projectPoints(current_measurements,world_points_gt,true);
 
-    //Now we have generated the synthetic measurements reference_image_points and current_measurements
-    
+
     IntPairVector correspondences;
     computeFakeCorrespondences(correspondences, reference_image_points, current_measurements);
 
-    // Essential estimation
-    
-    //const Eigen::Matrix3f E_est=estimate_essential(k,correspondences,reference_image_points,current_measurements);
-    
-    //Eigen::JacobiSVD<Eigen::Matrix3f> svd(E_est);
-
-    // const Eigen::Matrix3f E_gt = transform2essential(X_gt);
-    // std::cout << "E_gt:\n" << E_gt << std::endl << std::endl;
-    // std::cout << "E_est:\n" << E_est << std::endl << std::endl;
-    // std::cout << "Ratio of the essentials:\n";
-    // for (int i=0;i<3;i++){
-    //     for(int j=0;j<3;j++)
-    //         std::cout << E_est(i,j)/E_gt(i,j) << " ";
-    //     std::cout << std::endl;
-    // }
-    // std::cout << std::endl;
-
+    //Estimate of X_gt1
     const Eigen::Isometry3f X_est = estimate_transform(k, correspondences,reference_image_points,current_measurements);
-    print_comparison(X_est,X_gt);
-    Vector3fVector triangulated_world_points;
-    triangulate_points(k,X_est,correspondences,reference_image_points,current_measurements,triangulated_world_points);
 
-    write_eigen_vectors_to_file("p_triang.txt",triangulated_world_points);
+    //print_comparison(X_est,X_gt1,"**********EPIPOLAR RESULTS**********");
+
+    Vector3fVector world_points_est;
+    IntPairVector correspondences_new;
+    triangulate_points(k,X_est,correspondences,reference_image_points,
+                        current_measurements,world_points_est,correspondences_new);
+
+    write_eigen_vectors_to_file("world_triang.txt",world_points_est);
+
+    Eigen::Isometry3f X_gt2;
+    generate_isometry3f(X_gt2); //  pose of the world in camera 2
+
+    cam.setWorldInCameraPose(X_gt2);
+    cam.projectPoints(current_measurements,world_points_gt,true);
+
+    PICPSolver solver;
+    solver.setKernelThreshold(10000);
+
+    Vector3fVector points_in_cameraframe1;
+    for(const auto& p : world_points_est)
+        points_in_cameraframe1.push_back(X_est*p);
+    
+    solver.init(cam,points_in_cameraframe1,current_measurements);
+    for(int i=0;i<100;i++)
+        solver.oneRound(correspondences_new,false);
+    
+    cam=solver.camera();// this should estimate the pose of the first camera in the frame of the second
+    print_comparison(cam.worldInCameraPose(),X_gt2*(X_gt1.inverse()),"**********PICP RESULTS**********");
+    //std::cout << (Eigen::Matrix3f::Identity()-(cam.worldInCameraPose().inverse()*(X_gt2*(X_gt1.inverse()))).linear()).trace() << std::endl;
+    
     return 0;
 }

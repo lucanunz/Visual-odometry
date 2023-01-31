@@ -35,10 +35,10 @@ const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X){
 
 const Eigen::Matrix3f estimate_essential(const Eigen::Matrix3f& k, const IntPairVector& correspondences, const Vector2fVector& p1_img, const Vector2fVector& p2_img){
     if(correspondences.size()<8){
-        std::cout << "Less than 8 points\n";
-        return Eigen::Matrix3f::Zero();
+        std::cout << "Less than 8 points available to compute the essential matrix, aborting . . .\n";
+        exit(-1);
     }
-
+    //std::cout << correspondences.size() << std::endl << std::endl;
     Matrix9f H=Matrix9f::Zero();
     const auto iK=k.inverse();
     for (const IntPair& correspondence: correspondences){
@@ -81,16 +81,16 @@ void generate_isometry3f(Eigen::Isometry3f& X){
     X.translation()=Eigen::Vector3f::NullaryExpr(3,1,[&](){return dis(gen);});
 }
 
-void generate_points3d(const Eigen::Isometry3f& X,const int& num_points, Vector3fVector& p1, Vector3fVector& p2){
+Vector3fVector generate_points3d(const int& num_points){
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dis(-5.0f, 5.0f);
-
+    std::uniform_real_distribution<float> dis(0.f, 3.0f);
+    Vector3fVector points; points.resize(num_points);
     for(int i=0;i<num_points;i++){
         Eigen::Vector3f p = Eigen::Vector3f::NullaryExpr(3,1,[&](){return dis(gen);});
-        p1.push_back(p);
-        p2.push_back(X*p);
+        points[i]=p;
     }
+    return points;
 }
 
 const IsometryPair essential2transformPair(const Eigen::Matrix3f& E){
@@ -158,13 +158,37 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
         Eigen::Vector3f p;
         if(triangulate_point(d1,d2,t,p)){
             n_success++;
-            //triangulated.push_back((Eigen::Vector4f() << p1_img[i].head<1>(),p).finished());
             triangulated.push_back(p);
         }
     } 
     return n_success;
 }
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
+                        const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated, IntPairVector& correspondences_new){
+    const Eigen::Isometry3f iX = X.inverse();
+    const Eigen::Matrix3f iK = k.inverse();
+    const Eigen::Matrix3f iRiK = iX.linear()*iK;
+    const Eigen::Vector3f t= iX.translation();
+    int n_success=0;
 
+    for (const IntPair& correspondence: correspondences){
+        const int idx_first=correspondence.first;
+        const int idx_second=correspondence.second;
+        Eigen::Vector3f d1;
+        d1 << p1_img[idx_first],1;
+        d1 = iK*d1;
+        Eigen::Vector3f d2;
+        d2 << p2_img[idx_second],1;
+        d2 = iRiK*d2;
+        Eigen::Vector3f p;
+        if(triangulate_point(d1,d2,t,p)){
+            correspondences_new.push_back(IntPair(idx_second,n_success));
+            triangulated.push_back(p);
+            n_success++;
+        }
+    } 
+    return n_success;
+}
 const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 
                                             const Vector2fVector& p1_img, const Vector2fVector& p2_img){    
     const Eigen::Matrix3f E=estimate_essential(k,correspondences,p1_img,p2_img);

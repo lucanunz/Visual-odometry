@@ -100,12 +100,10 @@ inline Eigen::Matrix3f skew(const Eigen::Vector3f& v){
 //! @param X: isometry3f where to write the random transformation
 void generate_isometry3f(Eigen::Isometry3f& X);
 
-//! generates two set of random points in the 3D space. The second is equal to the first one transformed by X
-//! @param X: isometry3f that is used to transform p1, getting p2
+//! generates a set of random points in the 3D space.
 //! @param num_points: number of points to generate
-//! @param p1: first set of points
-//! @param p2: second set of points
-void generate_points3d(const Eigen::Isometry3f& X,const int& num_points, Vector3fVector& p1, Vector3fVector& p2);
+//! @returns the generated set of points
+Vector3fVector generate_points3d(const int& num_points);
 
 //! returns the ids only of the points that are present in both sets. The sets contains 3D projected vectors: id-col-row.
 //! @param p1_img: points in the first image, with their id
@@ -158,6 +156,20 @@ bool triangulate_point(const Eigen::Vector3f& d1,const Eigen::Vector3f& d2,const
 int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
                         const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated);
 
+//! @overload
+//! triangulate points given their projections on two images, and the relative pose between the cameras. Computes also
+//! a new set of correspondances between the triangulated points and the points in the second image
+//! @param k: 3x3 camera matrix
+//! @param X: relative pose of the first camera expressed in the frame of the second
+//! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
+//! @param p1_img: points in the first image
+//! @param p2_img: points in the second image
+//! @param triangulated: this vector will contain the triangulated points
+//! @param correspondences_new: this vector will contain the new correspondances (first: id of the measurement, second: id of the triangulated point)
+//! @returns the number of successfully triangulated points
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
+                        const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated,IntPairVector& correspondences_new);
+                        
 //! Estimates the relative pose of the first camera expressed in the frame of the second
 //! @param k: 3x3 camera matrix
 //! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
