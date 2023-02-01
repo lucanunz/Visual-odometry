@@ -60,7 +60,13 @@ int main() {
         std::cout << "Unable to open file 2\n";
         return -1;
     }
-
+    Vector3fVector world_points;
+    Vector10fVector world_points_appearances;
+    if(!get_meas_content(path+"world.dat",world_points_appearances,world_points,true)){
+        std::cout << "Unable to open world file\n";
+        return -1;     
+    }
+    write_eigen_vectors_to_file("world_points_real_data.txt",world_points);
     std::unordered_set<int> ids = get_valid_ids(reference_image_points_withid,current_image_points_withid);
     prune_projections(reference_image_points_withid,current_image_points_withid,ids);
 
@@ -77,11 +83,9 @@ int main() {
         std::cout << "Unable to get camera parameters\n";
         return -1; 
     }
-    // Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
-    // Camera cam2(int_params[2],int_params[3],int_params[0],int_params[1],k);
+    Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
 
-    //const Eigen::Matrix3f E=estimate_essential(k,correspondences,reference_image_points,current_image_points);
-    const Eigen::Isometry3f X = estimate_transform(k, correspondences,reference_image_points,current_image_points);
+    const Eigen::Isometry3f X = estimate_transform(cam.rows(),cam.cols(),cam.cameraMatrix(), correspondences, reference_image_points, current_image_points);
     std::cout << "R estimated:\n" << X.linear() << std::endl;
     std::cout << "t estimated:\n" << X.translation().transpose() << std::endl;
 

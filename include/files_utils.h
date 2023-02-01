@@ -34,8 +34,9 @@ bool get_file_names(const std::string& path, std::set<std::string>& files,const 
 //! @param file_path: complete path of the file to read
 //! @param appearances: will contain the appearance of each measurement found in the file
 //! @param features: will contain id-col-row of each measurement in the file
+//! @param is_world: if true, it means we are reading the file "world.dat". Otherwise, "meas-xxxxx.dat".
 //! @returns false if it is not possible to open the specified file
-bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features);
+bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features,bool is_world=false);
 
 //! retrieves the camera parameters from the specified file
 //! @param file_path: complete path of the file to read

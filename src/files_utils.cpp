@@ -15,7 +15,7 @@ bool get_file_names(const std::string& path, std::set<std::string>& files,const 
         return false;
     
 }
-bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features){
+bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features,bool is_world){
     std::ifstream input_stream(file_path);
     std::string word;
     std::string line;
@@ -24,8 +24,9 @@ bool get_meas_content(const std::string& file_path, Vector10fVector& appearances
         return false;
 
     // skip the first three lines
-    for (int i = 0; i < 3; i++)
-        std::getline(input_stream, line);
+    if(!is_world)
+        for (int i = 0; i < 3; i++)
+            std::getline(input_stream, line);
 
     while (std::getline(input_stream, line)) {
         std::stringstream ss(line);
@@ -33,7 +34,10 @@ bool get_meas_content(const std::string& file_path, Vector10fVector& appearances
         Eigen::Vector3f feature;
         if(line.empty())
             continue;
-        ss >> word; ss >> word;// skip the first 2 words
+        ss >> word; //first word is always skipped. If we are reading world.dat we are skipping the id. Otherwise, we are skipping "point"
+        if(!is_world){
+            ss >> word;// skip the first 2 words
+        }
         for (int i = 0; i < 13; i++) {
             ss >> n;
             if( i < 3)

@@ -42,7 +42,7 @@ int main() {
     Eigen::Isometry3f X_gt;
     generate_isometry3f(X_gt);
 
-    Vector3fVector world_points=generate_points3d(90);
+    Vector3fVector world_points=generate_points3d(1000);
     write_eigen_vectors_to_file("world_points.txt",world_points);
 
     Eigen::Matrix3f k;
@@ -81,7 +81,7 @@ int main() {
     // }
     // std::cout << std::endl;
 
-    const Eigen::Isometry3f X_est = estimate_transform(k, correspondences,reference_image_points,current_measurements);
+    const Eigen::Isometry3f X_est = estimate_transform(cam.rows(),cam.cols(),cam.cameraMatrix(), correspondences,reference_image_points,current_measurements);
     print_comparison(X_est,X_gt);
     Vector3fVector triangulated_world_points;
     triangulate_points(k,X_est,correspondences,reference_image_points,current_measurements,triangulated_world_points);

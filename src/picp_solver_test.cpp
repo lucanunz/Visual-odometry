@@ -44,7 +44,7 @@ int main() {
     Eigen::Isometry3f X_gt;
     generate_isometry3f(X_gt);
 
-    Vector3fVector world_points=generate_points3d(90);
+    Vector3fVector world_points=generate_points3d(1000);
     write_eigen_vectors_to_file("world_points.txt",world_points);
 
     Eigen::Matrix3f k;

@@ -44,7 +44,7 @@ int main() {
     Eigen::Isometry3f X_gt1; //pose of the world(camera position 0) in the first camera
     generate_isometry3f(X_gt1);
 
-    Vector3fVector world_points_gt=generate_points3d(90);
+    Vector3fVector world_points_gt=generate_points3d(1000);
     write_eigen_vectors_to_file("world_points_gt.txt",world_points_gt);
 
     Eigen::Matrix3f k;
@@ -66,9 +66,9 @@ int main() {
     computeFakeCorrespondences(correspondences, reference_image_points, current_measurements);
 
     //Estimate of X_gt1
-    const Eigen::Isometry3f X_est = estimate_transform(k, correspondences,reference_image_points,current_measurements);
+    const Eigen::Isometry3f X_est = estimate_transform(cam.rows(),cam.cols(),cam.cameraMatrix(), correspondences,reference_image_points,current_measurements);
 
-    //print_comparison(X_est,X_gt1,"**********EPIPOLAR RESULTS**********");
+    print_comparison(X_est,X_gt1,"**********EPIPOLAR RESULTS**********");
 
     Vector3fVector world_points_est;
     IntPairVector correspondences_new;
@@ -82,7 +82,7 @@ int main() {
 
     cam.setWorldInCameraPose(X_gt2);
     cam.projectPoints(current_measurements,world_points_gt,true);
-
+    
     PICPSolver solver;
     solver.setKernelThreshold(10000);
 

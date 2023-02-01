@@ -121,7 +121,8 @@ void prune_projections(Vector3fVector& p1_img, Vector3fVector& p2_img,const std:
 //! @param X: isometry3f from which compute the essential
 const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X);
 
-//! estimate essential matrix from two sets of corresponding points. It assumes that the i-th element of p1_img matches the i-th in p2_img
+//! Not used
+//! estimate essential matrix from two sets of corresponding points.
 //! @param k: 3x3 camera matrix
 //! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
 //! @param p1_img: points in the first image
@@ -169,12 +170,20 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
 //! @returns the number of successfully triangulated points
 int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
                         const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated,IntPairVector& correspondences_new);
-                        
+
+//! Normalizes the coordinates of the points in p to be between -1 and 1
+//! @param p: points to normalize
+//! @param rows: max y coordinate of the points
+//! @param cols: max x coordinate of the points
+//! @returns the normalized points
+Vector2fVector normalize(const Vector2fVector& p,const int& rows,const int& cols);          
 //! Estimates the relative pose of the first camera expressed in the frame of the second
+//! @param rows: number of pixels in a row of the image (used for normalization in fundamental computation)
+//! @param cols: number of pixels in a row of the image (used for normalization in fundamental computation)
 //! @param k: 3x3 camera matrix
 //! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
 //! @param p1_img: points in the first image
 //! @param p2_img: points in the second image
 //! @returns: the most consistent pose according to the number of successfully triangulated points
-const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 
+const Eigen::Isometry3f estimate_transform(const int& rows, const int& cols,const Eigen::Matrix3f k, const IntPairVector& correspondences, 
                                             const Vector2fVector& p1_img, const Vector2fVector& p2_img);

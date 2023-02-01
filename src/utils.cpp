@@ -64,7 +64,65 @@ const Eigen::Matrix3f estimate_essential(const Eigen::Matrix3f& k, const IntPair
     E << e(0),e(1),e(2),
         e(3),e(4),e(5),
         e(6),e(7),e(8);
+    // const Eigen::JacobiSVD<Eigen::Matrix3f> svd(E,Eigen::ComputeFullU | Eigen::ComputeFullV);
+    // Eigen::Matrix3f E_constrained;
+    // Eigen::DiagonalMatrix<float,3> Da(1.f,1.f,0.f);
+    // E_constrained=svd.matrixU()*Da*svd.matrixV().transpose();
+    // return E_constrained;
     return E;
+}
+
+Vector2fVector normalize(const Vector2fVector& p,const int& rows,const int& cols){
+    Vector2fVector ret; ret.resize(p.size());
+    for(size_t i=0;i<p.size();i++)
+        ret[i] << p[i].x()/(cols/2.f)-1.f,p[i].y()/(rows/2.f)-1.f;
+    return ret;
+}
+
+const Eigen::Matrix3f estimate_fundamental(const int& rows, const int& cols,const IntPairVector& correspondences, 
+                                            const Vector2fVector& p1_img, const Vector2fVector& p2_img){
+    if(correspondences.size()<8){
+        std::cout << "Less than 8 points available to compute the fundamental matrix, aborting . . .\n";
+        exit(-1);
+    }
+    //coordinate points normalization in [-1,1]
+    Vector2fVector p1_img_norm=normalize(p1_img,rows,cols);
+    Vector2fVector p2_img_norm=normalize(p2_img,rows,cols);
+
+    const int N=correspondences.size();
+    Eigen::MatrixXf A(N,9);
+
+    for (int i=0;i<N;i++){
+        const int idx_first=correspondences[i].first;
+        const int idx_second=correspondences[i].second;
+        Eigen::Vector3f d1;
+        d1 << p1_img_norm[idx_first],1;
+        Eigen::Vector3f d2;
+        d2 << p2_img_norm[idx_second],1;
+        const Eigen::Matrix3f m=d1*d2.transpose();
+        A.row(i)<<m(0,0),m(0,1),m(0,2),m(1,0),m(1,1),m(1,2),m(2,0),m(2,1),m(2,2);
+    }
+    const Eigen::JacobiSVD<Eigen::MatrixXf> svd(A,Eigen::ComputeThinV);
+    Vector9f v=svd.matrixV().col(8);
+    Eigen::Matrix3f Fa;
+    Fa << v(0),v(1),v(2),
+            v(3),v(4),v(5),
+            v(6),v(7),v(8);
+    const Eigen::JacobiSVD<Eigen::Matrix3f> svd_Fa(Fa,Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+    Eigen::DiagonalMatrix<float,3> Da;
+    Da.diagonal() << svd_Fa.singularValues().head<2>(),0.f;
+
+    // impose fundamental to have rk 2
+    Eigen::Matrix3f F;
+    F=svd_Fa.matrixU()*Da*svd_Fa.matrixV().transpose();
+
+    Eigen::Matrix3f T;
+    T << 1/(cols/2.f),0,-1,
+            0,1/(rows/2.f),-1,
+            0,0,1;
+    //to undo the effect of coordinates normalization
+    return T.transpose()*F*T;
 }
 
 void generate_isometry3f(Eigen::Isometry3f& X){
@@ -82,12 +140,14 @@ void generate_isometry3f(Eigen::Isometry3f& X){
 }
 
 Vector3fVector generate_points3d(const int& num_points){
+    //generating data in the same range of the ones provided
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dis(0.f, 3.0f);
+    std::uniform_real_distribution<float> dis(-10.f, 10.0f);
     Vector3fVector points; points.resize(num_points);
     for(int i=0;i<num_points;i++){
-        Eigen::Vector3f p = Eigen::Vector3f::NullaryExpr(3,1,[&](){return dis(gen);});
+        Eigen::Vector3f p;
+        p << dis(gen),dis(gen),dis(gen)*0.1f+1.0f;
         points[i]=p;
     }
     return points;
@@ -189,14 +249,17 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
     } 
     return n_success;
 }
-const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 
-                                            const Vector2fVector& p1_img, const Vector2fVector& p2_img){    
-    const Eigen::Matrix3f E=estimate_essential(k,correspondences,p1_img,p2_img);
+const Eigen::Isometry3f estimate_transform(const int& rows, const int& cols,const Eigen::Matrix3f k, const IntPairVector& correspondences, 
+                                            const Vector2fVector& p1_img, const Vector2fVector& p2_img){
+
+    Eigen::Matrix3f F=estimate_fundamental(rows,cols,correspondences,p1_img,p2_img);
+    Eigen::Matrix3f E=k.transpose()*F*k;    
     const IsometryPair X12=essential2transformPair(E);
 
     int n_test=0,n_in_front=0;
     Eigen::Isometry3f X_best;
     Vector3fVector triang;
+    
     Eigen::Isometry3f X_test=std::get<0>(X12);
     n_test=triangulate_points(k,X_test,correspondences,p1_img,p2_img,triang);
     if (n_test > n_in_front){
