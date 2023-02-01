@@ -85,7 +85,7 @@ int main() {
     }
     Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
 
-    const Eigen::Isometry3f X = estimate_transform(cam.rows(),cam.cols(),cam.cameraMatrix(), correspondences, reference_image_points, current_image_points);
+    const Eigen::Isometry3f X = estimate_transform(cam.cameraMatrix(), correspondences, reference_image_points, current_image_points);
     std::cout << "R estimated:\n" << X.linear() << std::endl;
     std::cout << "t estimated:\n" << X.translation().transpose() << std::endl;
 

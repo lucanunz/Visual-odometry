@@ -66,7 +66,7 @@ int main() {
     computeFakeCorrespondences(correspondences, reference_image_points, current_measurements);
 
     //Estimate of X_gt1
-    const Eigen::Isometry3f X_est = estimate_transform(cam.rows(),cam.cols(),cam.cameraMatrix(), correspondences,reference_image_points,current_measurements);
+    const Eigen::Isometry3f X_est = estimate_transform(cam.cameraMatrix(), correspondences,reference_image_points,current_measurements);
 
     print_comparison(X_est,X_gt1,"**********EPIPOLAR RESULTS**********");
 

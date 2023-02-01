@@ -81,7 +81,7 @@ int main() {
     // }
     // std::cout << std::endl;
 
-    const Eigen::Isometry3f X_est = estimate_transform(cam.rows(),cam.cols(),cam.cameraMatrix(), correspondences,reference_image_points,current_measurements);
+    const Eigen::Isometry3f X_est = estimate_transform(cam.cameraMatrix(), correspondences,reference_image_points,current_measurements);
     print_comparison(X_est,X_gt);
     Vector3fVector triangulated_world_points;
     triangulate_points(k,X_est,correspondences,reference_image_points,current_measurements,triangulated_world_points);

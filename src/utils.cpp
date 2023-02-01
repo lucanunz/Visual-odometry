@@ -72,22 +72,35 @@ const Eigen::Matrix3f estimate_essential(const Eigen::Matrix3f& k, const IntPair
     return E;
 }
 
-Vector2fVector normalize(const Vector2fVector& p,const int& rows,const int& cols){
-    Vector2fVector ret; ret.resize(p.size());
+Vector2fVector normalize(const Vector2fVector& p,Eigen::Matrix3f& T){
+    Vector2fVector ret(p.size());
+    float max_x=0.f,max_y=0.f;
+    for(const auto& v : p){
+        if(v.x()>max_x)
+            max_x=v.x();
+        if(v.y()>max_y)
+            max_y=v.y();
+    }
+
     for(size_t i=0;i<p.size();i++)
-        ret[i] << p[i].x()/(cols/2.f)-1.f,p[i].y()/(rows/2.f)-1.f;
+        ret[i] << p[i].x()/(max_x/2.f)-1.f,p[i].y()/(max_y/2.f)-1.f;
+
+    T << 1.f/(max_x/2.f),0.f,-1.f,
+        0.f,1.f/(max_y/2.f),-1.f,
+        0.f,0.f,1.f;
     return ret;
 }
 
-const Eigen::Matrix3f estimate_fundamental(const int& rows, const int& cols,const IntPairVector& correspondences, 
+const Eigen::Matrix3f estimate_fundamental(const IntPairVector& correspondences, 
                                             const Vector2fVector& p1_img, const Vector2fVector& p2_img){
     if(correspondences.size()<8){
         std::cout << "Less than 8 points available to compute the fundamental matrix, aborting . . .\n";
         exit(-1);
     }
+    Eigen::Matrix3f T1,T2; //conditioning matrices
     //coordinate points normalization in [-1,1]
-    Vector2fVector p1_img_norm=normalize(p1_img,rows,cols);
-    Vector2fVector p2_img_norm=normalize(p2_img,rows,cols);
+    Vector2fVector p1_img_norm=normalize(p1_img,T1);
+    Vector2fVector p2_img_norm=normalize(p2_img,T2);
 
     const int N=correspondences.size();
     Eigen::MatrixXf A(N,9);
@@ -117,12 +130,8 @@ const Eigen::Matrix3f estimate_fundamental(const int& rows, const int& cols,cons
     Eigen::Matrix3f F;
     F=svd_Fa.matrixU()*Da*svd_Fa.matrixV().transpose();
 
-    Eigen::Matrix3f T;
-    T << 1/(cols/2.f),0,-1,
-            0,1/(rows/2.f),-1,
-            0,0,1;
-    //to undo the effect of coordinates normalization
-    return T.transpose()*F*T;
+    // undo the effect of coordinates normalization
+    return T1.transpose()*F*T2;
 }
 
 void generate_isometry3f(Eigen::Isometry3f& X){
@@ -249,10 +258,10 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
     } 
     return n_success;
 }
-const Eigen::Isometry3f estimate_transform(const int& rows, const int& cols,const Eigen::Matrix3f k, const IntPairVector& correspondences, 
+const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 
                                             const Vector2fVector& p1_img, const Vector2fVector& p2_img){
 
-    Eigen::Matrix3f F=estimate_fundamental(rows,cols,correspondences,p1_img,p2_img);
+    Eigen::Matrix3f F=estimate_fundamental(correspondences,p1_img,p2_img);
     Eigen::Matrix3f E=k.transpose()*F*k;    
     const IsometryPair X12=essential2transformPair(E);
 
