@@ -1,3 +1,4 @@
+// This file generate synthetic data and measurements from 2 poses and estimates the relative pose using picp
 #include <iostream>
 #include "utils.h"
 #include "files_utils.h"
@@ -45,11 +46,10 @@ int main() {
     generate_isometry3f(X_gt);
 
     Vector3fVector world_points=generate_points3d(1000);
-    write_eigen_vectors_to_file("world_points.txt",world_points);
 
     Eigen::Matrix3f k;
-    k << 150.f,0.f,320.f,
-        0.f,150.f,240.f,
+    k << 180.f,0.f,320.f,
+        0.f,180.f,240.f,
         0.f,0.f,1.f;
     Camera cam(480,640,0,10,k);
     
@@ -66,17 +66,15 @@ int main() {
     IntPairVector correspondences;
     computeFakeCorrespondences(correspondences, reference_image_points, current_measurements);
 
-    Vector6f disturbance;
-    disturbance << 0.4f,0.2f,0.3f,0.2f,0.1f,0.2f;
-    cam.setWorldInCameraPose(X_gt*v2tEuler(disturbance));
+    cam.setWorldInCameraPose(Eigen::Isometry3f::Identity());
 
     PICPSolver solver;
     solver.setKernelThreshold(10000);
     solver.init(cam,world_points,current_measurements);
-    for(int i=0;i<100;i++)
+    for(int i=0;i<1000;i++)
         solver.oneRound(correspondences,false);
     
     cam=solver.camera();
-    print_comparison(cam.worldInCameraPose(),X_gt,"\n");
+    print_comparison(cam.worldInCameraPose(),X_gt,"PICP solver");
     return 0;
 }

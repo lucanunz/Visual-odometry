@@ -1,3 +1,4 @@
+// This file tests if data files are read correctly
 #include <iostream>
 #include "utils.h"
 #include "files_utils.h"

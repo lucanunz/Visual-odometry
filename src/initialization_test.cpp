@@ -1,3 +1,4 @@
+//This file generates syntethic data and measurements, and estimates the pose between two images using epipolar geometry
 #include <iostream>
 #include "utils.h"
 #include "files_utils.h"
@@ -83,9 +84,6 @@ int main() {
 
     const Eigen::Isometry3f X_est = estimate_transform(cam.cameraMatrix(), correspondences,reference_image_points,current_measurements);
     print_comparison(X_est,X_gt);
-    Vector3fVector triangulated_world_points;
-    triangulate_points(k,X_est,correspondences,reference_image_points,current_measurements,triangulated_world_points);
-
-    write_eigen_vectors_to_file("p_triang.txt",triangulated_world_points);
+    
     return 0;
 }

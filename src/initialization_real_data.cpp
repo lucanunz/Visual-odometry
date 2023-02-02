@@ -1,27 +1,8 @@
+//This file works on real data: it estimates the relative position between the first 2 set of measurements using epipolar geometry
 #include <iostream>
 #include "utils.h"
 #include "files_utils.h"
 #include "camera.h"
-
-void computeFakeCorrespondences(IntPairVector& correspondences,
-				const Vector2fVector reference_image_points,
-				const Vector2fVector current_image_points){
-    correspondences.resize(current_image_points.size());
-    int num_correspondences=0;
-    assert(reference_image_points.size()==current_image_points.size());
-  
-    for (size_t i=0; i<reference_image_points.size(); i++){
-        const Eigen::Vector2f& reference_point=reference_image_points[i];
-        const Eigen::Vector2f& current_point=current_image_points[i];
-        IntPair& correspondence=correspondences[num_correspondences];
-        if (reference_point.x()<0 || current_point.x()<0) //if one of them is the invalid point
-            continue;
-        correspondence.first=i;
-        correspondence.second=i;
-        num_correspondences++;
-    }
-    correspondences.resize(num_correspondences);
-}
 
 Vector2fVector strip_id(const Vector3fVector& p_withid){
     Vector2fVector ret; ret.reserve(p_withid.size());
@@ -30,6 +11,22 @@ Vector2fVector strip_id(const Vector3fVector& p_withid){
         ret.push_back(el.tail<2>());
     
     return ret;
+}
+
+IntPairVector extract_correspondences_images(const Vector3fVector& reference_image_points_withid,const Vector3fVector& current_image_points_withid){
+    IntPairVector correspondences; correspondences.reserve(current_image_points_withid.size());
+
+    for(size_t i=0;i<reference_image_points_withid.size();i++){
+        for(size_t j=0;j<current_image_points_withid.size();j++){
+            if(current_image_points_withid[j].x()>reference_image_points_withid[i].x()) //measurements are ordered by the point id
+                break;
+            if(current_image_points_withid[j].x()==reference_image_points_withid[i].x()){
+                correspondences.push_back(IntPair(i,j));
+                break;
+            }
+        }
+    }
+    return correspondences;
 }
 
 int main() {
@@ -49,14 +46,15 @@ int main() {
 
     //read data from file1 and file2
     Vector3fVector reference_image_points_withid; //vector where each element is point_id-col-row where [col,row] is where it is observed in the image
-    Vector10fVector appearances_1;
+    Vector10fVector reference_appearances;
     Vector3fVector current_image_points_withid;
-    Vector10fVector appearances_2;
-    if(!get_meas_content(path+first_file,appearances_1,reference_image_points_withid)){
+    Vector10fVector current_appearances;
+    
+    if(!get_meas_content(path+first_file,reference_appearances,reference_image_points_withid)){
         std::cout << "Unable to open file 1\n";
         return -1;
     }
-    if(!get_meas_content(path+second_file,appearances_2,current_image_points_withid)){
+    if(!get_meas_content(path+second_file,current_appearances,current_image_points_withid)){
         std::cout << "Unable to open file 2\n";
         return -1;
     }
@@ -66,17 +64,14 @@ int main() {
         std::cout << "Unable to open world file\n";
         return -1;     
     }
-    write_eigen_vectors_to_file("world_points_real_data.txt",world_points);
-    std::unordered_set<int> ids = get_valid_ids(reference_image_points_withid,current_image_points_withid);
-    prune_projections(reference_image_points_withid,current_image_points_withid,ids);
 
+    //the pair is (ref_idx,curr_idx)
+    IntPairVector correspondences_imgs = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
     Vector2fVector reference_image_points=strip_id(reference_image_points_withid);
     Vector2fVector current_image_points=strip_id(current_image_points_withid);
 
-    IntPairVector correspondences;
-    computeFakeCorrespondences(correspondences, reference_image_points, current_image_points);
     // initialize a camera object
-    std::vector<int> int_params; int_params.reserve(4); //z_near,z_far,rows,cols
+    std::vector<int> int_params; //z_near,z_far,rows,cols
     Eigen::Matrix3f k;
 
     if(!get_camera_params(path+"camera.dat",int_params,k)){
@@ -85,9 +80,9 @@ int main() {
     }
     Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
 
-    const Eigen::Isometry3f X = estimate_transform(cam.cameraMatrix(), correspondences, reference_image_points, current_image_points);
+    const Eigen::Isometry3f X = estimate_transform(cam.cameraMatrix(), correspondences_imgs, reference_image_points, current_image_points);
     std::cout << "R estimated:\n" << X.linear() << std::endl;
-    std::cout << "t estimated:\n" << X.translation().transpose() << std::endl;
-
+    std::cout << "t estimated: " << X.translation().transpose() << std::endl;
+   
     return 0;
 }

@@ -214,7 +214,7 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
     const Eigen::Matrix3f iRiK = iX.linear()*iK;
     const Eigen::Vector3f t= iX.translation();
     int n_success=0;
-
+    triangulated.resize(correspondences.size());
     for (const IntPair& correspondence: correspondences){
         const int idx_first=correspondence.first;
         const int idx_second=correspondence.second;
@@ -226,10 +226,11 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
         d2 = iRiK*d2;
         Eigen::Vector3f p;
         if(triangulate_point(d1,d2,t,p)){
+            triangulated[n_success]=p;
             n_success++;
-            triangulated.push_back(p);
         }
-    } 
+    }
+    triangulated.resize(n_success);
     return n_success;
 }
 int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
@@ -239,7 +240,7 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
     const Eigen::Matrix3f iRiK = iX.linear()*iK;
     const Eigen::Vector3f t= iX.translation();
     int n_success=0;
-
+    triangulated.resize(correspondences.size());
     for (const IntPair& correspondence: correspondences){
         const int idx_first=correspondence.first;
         const int idx_second=correspondence.second;
@@ -252,10 +253,11 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
         Eigen::Vector3f p;
         if(triangulate_point(d1,d2,t,p)){
             correspondences_new.push_back(IntPair(idx_second,n_success));
-            triangulated.push_back(p);
+            triangulated[n_success]=p;
             n_success++;
         }
     } 
+    triangulated.resize(n_success);
     return n_success;
 }
 const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 

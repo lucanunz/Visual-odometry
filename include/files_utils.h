@@ -24,6 +24,8 @@ void write_eigen_vectors_to_file(const std::string& file_path, const std::vector
     
     output_file.close();
 }
+
+void save_trajectory(const std::string& file_path, const VectorIsometry& vector);
 //! writes in files the file names (in alphabetical order) found in path that match the regex
 //! @param path: path where to look for the files
 //! @param files: it will contain the file names that match the regex in alphabetical order
@@ -36,7 +38,7 @@ bool get_file_names(const std::string& path, std::set<std::string>& files,const 
 //! @param features: will contain id-col-row of each measurement in the file
 //! @param is_world: if true, it means we are reading the file "world.dat". Otherwise, "meas-xxxxx.dat".
 //! @returns false if it is not possible to open the specified file
-bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features,bool is_world=false);
+bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features,const bool& is_world=false);
 
 //! retrieves the camera parameters from the specified file
 //! @param file_path: complete path of the file to read

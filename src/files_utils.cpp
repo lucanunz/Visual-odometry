@@ -3,6 +3,7 @@
 bool get_file_names(const std::string& path, std::set<std::string>& files,const std::regex& pattern){
     DIR *dir;
     struct dirent *ent;
+    files.clear();
     if ((dir = opendir(path.c_str())) != NULL) {
         while ((ent = readdir (dir)) != NULL) {
             std::string file_name = ent->d_name;
@@ -15,7 +16,9 @@ bool get_file_names(const std::string& path, std::set<std::string>& files,const 
         return false;
     
 }
-bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features,bool is_world){
+bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features,const bool& is_world){
+    appearances.clear();
+    features.clear();
     std::ifstream input_stream(file_path);
     std::string word;
     std::string line;
@@ -58,6 +61,7 @@ bool get_camera_params(const std::string& file_path, std::vector<int>& int_param
     std::string keyword;
     std::string line;
     int n=0;
+    int_params.clear(); int_params.reserve(4);
     if(!input_stream.is_open())
         return false;
 
@@ -83,4 +87,22 @@ bool get_camera_params(const std::string& file_path, std::vector<int>& int_param
     }
     input_stream.close();
     return true;
+}
+void save_trajectory(const std::string& file_path, const VectorIsometry& vector){
+    std::ofstream output_file(file_path);
+    if(!output_file.is_open()) {
+        std::cout << "Error opening file" << std::endl;
+        return;
+    }
+    Eigen::Isometry3f H;
+    H.linear() << 0.f, 0.f, 1.f,
+            -1.f,0.f,0.f,
+            0.f,-1.f,0.f;
+    H.translation() << 0.2f,0.f,0.f;
+    for(size_t i=0;i<vector.size();i++){
+        H=H*vector[i].inverse();
+        output_file << H.translation().transpose() << std::endl;
+    }
+    
+    output_file.close();
 }

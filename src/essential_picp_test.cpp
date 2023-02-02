@@ -1,3 +1,6 @@
+// In this file we first generate synthetic data and 3 sets of measurements, then perform the estimation of
+// the relative pose between two camera using epipolar geometry. Given this transformation, we triangulate
+// to estimate the position of the points in the world, and then use this estimate to perform picp
 #include <iostream>
 #include "utils.h"
 #include "files_utils.h"
@@ -89,7 +92,8 @@ int main() {
     Vector3fVector points_in_cameraframe1;
     for(const auto& p : world_points_est)
         points_in_cameraframe1.push_back(X_est*p);
-    
+
+    cam.setWorldInCameraPose(Eigen::Isometry3f::Identity());
     solver.init(cam,points_in_cameraframe1,current_measurements);
     for(int i=0;i<100;i++)
         solver.oneRound(correspondences_new,false);
