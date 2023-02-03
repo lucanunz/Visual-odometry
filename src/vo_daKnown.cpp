@@ -97,16 +97,23 @@ int main() {
 
     Vector3fVector triangulated;
     IntPairVector correspondences_world;
-    triangulate_points(k,X,correspondences_imgs,reference_image_points,
+    Eigen::Isometry3f X_2d=X;
+    X_2d.linear()(0,1)=0.f;
+    X_2d.linear()(1,0)=0.f;
+    X_2d.linear()(1,2)=0.f;
+    X_2d.linear()(2,1)=0.f;
+    X_2d.translation().y() = 0.f;
+
+    triangulate_points(k,X_2d,correspondences_imgs,reference_image_points,
                         current_image_points,triangulated,correspondences_world); // At this stage correspondences_world contains the pairs (curr_idx,world_idx)
 
     // The estimated transform X is the pose 00000 in frame 00001. "triangulated" are points expressed in 00000.
 
     VectorIsometry trajectory; trajectory.reserve(files.size()+1);
-    trajectory.push_back(X);
+    trajectory.push_back(X_2d);
     PICPSolver solver;
     solver.setKernelThreshold(10000);
-    Eigen::Isometry3f X_curr=X;
+    Eigen::Isometry3f X_curr=X_2d;
 
     reference_image_points=current_image_points;
     reference_image_points_withid=current_image_points_withid;
@@ -123,7 +130,7 @@ int main() {
         correspondences_imgs = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
         current_image_points=strip_id(current_image_points_withid);
         Vector2fVector reference_image_points=strip_id(reference_image_points_withid);
-        IntPairVector correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
+        correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
 
         for(auto& p : triangulated)
             p=X_curr*p;
