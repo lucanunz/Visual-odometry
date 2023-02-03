@@ -10,7 +10,7 @@ Vector2fVector strip_id(const Vector3fVector& p_withid){
 
     for(const auto& el : p_withid)
         ret.push_back(el.tail<2>());
-    
+
     return ret;
 }
 
@@ -49,7 +49,7 @@ IntPairVector extract_correspondences_world(const IntPairVector& correspondences
 
 int main() {
     // Using real data 
-    
+
     const std::string path="/home/luca/vo_data/data/";
     const std::regex pattern("^meas-\\d.*\\.dat$");
     std::set<std::string> files;
@@ -67,7 +67,7 @@ int main() {
     Vector10fVector reference_appearances;
     Vector3fVector current_image_points_withid;
     Vector10fVector current_appearances;
-    
+
     if(!get_meas_content(path+first_file,reference_appearances,reference_image_points_withid)){
         std::cout << "Unable to open file 1\n";
         return -1;
@@ -123,7 +123,7 @@ int main() {
         correspondences_imgs = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
         current_image_points=strip_id(current_image_points_withid);
         Vector2fVector reference_image_points=strip_id(reference_image_points_withid);
-        IntPairVector correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
+        correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
 
         for(auto& p : triangulated)
             p=X_curr*p;

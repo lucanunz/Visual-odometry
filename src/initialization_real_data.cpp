@@ -86,7 +86,7 @@ int main() {
 
     // triangulate the points to compare them with the true ones
     Vector3fVector triangulated;
-    triangulate_points(k,X_gt,correspondences_imgs,reference_image_points,current_image_points,triangulated);
+    triangulate_points(k,X,correspondences_imgs,reference_image_points,current_image_points,triangulated);
 
     Eigen::Isometry3f X0; //relative pose of the 0 position of the camera in the world frame
     X0.linear() << 0.f, 0.f, 1.f,
