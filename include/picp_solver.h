@@ -58,7 +58,7 @@
   protected:
 
     bool errorAndJacobian(Eigen::Vector2f& error,
-			  Matrix2_6f& jacobian,
+			  Matrix2_3f& jacobian,
 			  const Eigen::Vector3f& world_point,
 			  const Eigen::Vector2f& reference_image_point);
 
@@ -71,8 +71,8 @@
     int _min_num_inliers;            //< if less inliers than this value, the solver stops
     const Vector3fVector* _world_points;
     const Vector2fVector* _reference_image_points;
-    Matrix6f _H;
-    Vector6f _b;
+    Eigen::Matrix3f _H;
+    Eigen::Vector3f _b;
     float _chi_inliers;
     float _chi_outliers;
     int _num_inliers;

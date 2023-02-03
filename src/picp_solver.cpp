@@ -23,7 +23,7 @@
   }
 
   bool PICPSolver::errorAndJacobian(Eigen::Vector2f &error,
-                                    Matrix2_6f &jacobian,
+                                    Matrix2_3f &jacobian,
                                     const Eigen::Vector3f &world_point,
                                     const Eigen::Vector2f &reference_image_point)
   {
@@ -36,9 +36,10 @@
 
     // compute the jacobian of the transformation
     Eigen::Vector3f camera_point = _camera.worldInCameraPose() * world_point;
-    Matrix3_6f Jr = Eigen::Matrix<float, 3, 6>::Zero();
-    Jr.block<3, 3>(0, 0).setIdentity();
-    Jr.block<3, 3>(0, 3) = skew(-camera_point);
+    Eigen::Matrix3f Jr = Eigen::Matrix3f::Zero();
+    Jr << 1,0,camera_point.z(),
+          0,0,0,
+          0,1,-camera_point.x();
 
     Eigen::Vector3f phom = _camera.cameraMatrix() * camera_point;
     float iz = 1. / phom.z();
@@ -62,7 +63,7 @@
     for (const IntPair &correspondence : correspondences)
     {
       Eigen::Vector2f e;
-      Matrix2_6f J;
+      Matrix2_3f J;
       int ref_idx = correspondence.first;
       int curr_idx = correspondence.second;
       bool inside = errorAndJacobian(e,
@@ -99,14 +100,14 @@
   {
     using namespace std;
     linearize(correspondences, keep_outliers);
-    _H += Matrix6f::Identity() * _damping;
+    _H += Eigen::Matrix3f::Identity() * _damping;
     if (_num_inliers < _min_num_inliers)
     {
       cerr << "too few inliers, skipping" << endl;
       return false;
     }
     // compute a solution
-    Vector6f dx = _H.ldlt().solve(-_b);
-    _camera.setWorldInCameraPose(v2tEuler(dx) * _camera.worldInCameraPose());
+    Eigen::Vector3f dx = _H.ldlt().solve(-_b);
+    _camera.setWorldInCameraPose(v2tEuler((Vector6f() << dx.x(),0.f,dx.y(),0.f,dx.z(),0.f).finished()) * _camera.worldInCameraPose());
     return true;
   }
