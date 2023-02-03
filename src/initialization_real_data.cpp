@@ -64,7 +64,7 @@ int main() {
         std::cout << "Unable to open world file\n";
         return -1;     
     }
-
+    write_eigen_vectors_to_file("world.txt",world_points);
     //the pair is (ref_idx,curr_idx)
     IntPairVector correspondences_imgs = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
     Vector2fVector reference_image_points=strip_id(reference_image_points_withid);
@@ -83,6 +83,18 @@ int main() {
     const Eigen::Isometry3f X = estimate_transform(cam.cameraMatrix(), correspondences_imgs, reference_image_points, current_image_points);
     std::cout << "R estimated:\n" << X.linear() << std::endl;
     std::cout << "t estimated: " << X.translation().transpose() << std::endl;
-   
+
+    // triangulate the points to compare them with the true ones
+    Vector3fVector triangulated;
+    triangulate_points(k,X_gt,correspondences_imgs,reference_image_points,current_image_points,triangulated);
+
+    Eigen::Isometry3f X0; //relative pose of the 0 position of the camera in the world frame
+    X0.linear() << 0.f, 0.f, 1.f,
+            -1.f,0.f,0.f,
+            0.f,-1.f,0.f;
+    X0.translation() << 0.2f,0.f,0.f;
+    for(auto& p : triangulated)
+        p=X0*p;
+    write_eigen_vectors_to_file("triangulated.txt",triangulated);
     return 0;
 }
