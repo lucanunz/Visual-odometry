@@ -97,8 +97,8 @@ int main() {
 
     Vector3fVector triangulated;
     IntPairVector correspondences_world;
-    Eigen::Isometry3f X_gt=Eigen::Isometry3f::Identity();
-    X_gt.translation() << 0.f,0.f,-0.200426f;
+    //Eigen::Isometry3f X_gt=Eigen::Isometry3f::Identity();
+    //X_gt.translation() << 0.f,0.f,-0.200426f;
     triangulate_points(k,X,correspondences_imgs,reference_image_points,
                         current_image_points,triangulated,correspondences_world); // At this stage correspondences_world contains the pairs (curr_idx,world_idx)
 
@@ -109,7 +109,7 @@ int main() {
     PICPSolver solver;
     solver.setKernelThreshold(10000);
     Eigen::Isometry3f X_curr=X;
-    //std::cout << X.translation().transpose() << std::endl;
+    
     reference_image_points=current_image_points;
     reference_image_points_withid=current_image_points_withid;
     reference_appearances=current_appearances;
