@@ -90,7 +90,34 @@ Vector2fVector normalize(const Vector2fVector& p,Eigen::Matrix3f& T){
         0.f,0.f,1.f;
     return ret;
 }
+// Vector2fVector normalize(const Vector2fVector& p,Eigen::Matrix3f& T){
+//     Vector2fVector ret(p.size());
+//     const Eigen::Vector2f invalid(-1.f,-1.f);
+//     Eigen::Matrix<float,3,Eigen::Dynamic> P_img;
+//     int n=0;
+//     for(const auto& vec : p){
+//         if(vec != invalid){
+//             P_img.conservativeResize(3,n+1);
+//             P_img.col(n) << vec,1;
+//             n++;
+//         }
+//     }
+//     Eigen::Vector3f mu=P_img.rowwise().mean();
+//     Eigen::MatrixXf centered=P_img.colwise()-mu;
+//     Eigen::Matrix3f sigma=(centered*centered.transpose())/float(p.size()-1);
+        
 
+//     Eigen::Matrix2f chol(sigma.block<2,2>(0,0).llt().matrixL());
+
+//     T=Eigen::Matrix3f::Identity();
+//     T.block<2,2>(0,0)=chol.inverse();
+//     Eigen::Vector2f t=T.block<2,2>(0,0)*mu.head<2>();
+//     t.block<2,1>(0,2)=t;
+//     for(size_t i=0;i<p.size();i++){
+//        ret[i]=T.block<2,2>(0,0)*p[i]+t;     
+//     }
+//     return ret;
+// }
 const Eigen::Matrix3f estimate_fundamental(const IntPairVector& correspondences, 
                                             const Vector2fVector& p1_img, const Vector2fVector& p2_img){
     if(correspondences.size()<8){

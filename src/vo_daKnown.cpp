@@ -97,24 +97,19 @@ int main() {
 
     Vector3fVector triangulated;
     IntPairVector correspondences_world;
-    Eigen::Isometry3f X_2d=X;
-    X_2d.linear()(0,1)=0.f;
-    X_2d.linear()(1,0)=0.f;
-    X_2d.linear()(1,2)=0.f;
-    X_2d.linear()(2,1)=0.f;
-    X_2d.translation().y() = 0.f;
-
-    triangulate_points(k,X_2d,correspondences_imgs,reference_image_points,
+    Eigen::Isometry3f X_gt=Eigen::Isometry3f::Identity();
+    X_gt.translation() << 0.f,0.f,-0.200426f;
+    triangulate_points(k,X,correspondences_imgs,reference_image_points,
                         current_image_points,triangulated,correspondences_world); // At this stage correspondences_world contains the pairs (curr_idx,world_idx)
 
     // The estimated transform X is the pose 00000 in frame 00001. "triangulated" are points expressed in 00000.
 
     VectorIsometry trajectory; trajectory.reserve(files.size()+1);
-    trajectory.push_back(X_2d);
+    trajectory.push_back(X);
     PICPSolver solver;
     solver.setKernelThreshold(10000);
-    Eigen::Isometry3f X_curr=X_2d;
-
+    Eigen::Isometry3f X_curr=X;
+    //std::cout << X.translation().transpose() << std::endl;
     reference_image_points=current_image_points;
     reference_image_points_withid=current_image_points_withid;
     reference_appearances=current_appearances;
@@ -129,7 +124,7 @@ int main() {
 
         correspondences_imgs = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
         current_image_points=strip_id(current_image_points_withid);
-        Vector2fVector reference_image_points=strip_id(reference_image_points_withid);
+        reference_image_points=strip_id(reference_image_points_withid);
         correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
 
         for(auto& p : triangulated)
@@ -143,9 +138,9 @@ int main() {
 
         trajectory.push_back(cam.worldInCameraPose());
         X_curr=cam.worldInCameraPose();
-        std::cout << "******************* File " << file << std::endl;
-        std::cout << cam.worldInCameraPose().linear() << std::endl;
-        std::cout << cam.worldInCameraPose().translation().transpose() << std::endl;
+        // std::cout << "******************* File " << file << std::endl;
+        // std::cout << cam.worldInCameraPose().linear() << std::endl;
+        // std::cout << cam.worldInCameraPose().translation().transpose() << std::endl;
         triangulate_points(k,cam.worldInCameraPose(),correspondences_imgs,reference_image_points,
                         current_image_points,triangulated,correspondences_world);
         reference_image_points=current_image_points;
