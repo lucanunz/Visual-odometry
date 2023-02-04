@@ -94,11 +94,11 @@ void save_trajectory(const std::string& file_path, const VectorIsometry& vector)
         std::cout << "Error opening file" << std::endl;
         return;
     }
-    Eigen::Isometry3f H;
+    Eigen::Isometry3f H=Eigen::Isometry3f::Identity();
     H.linear() << 0.f, 0.f, 1.f,
             -1.f,0.f,0.f,
             0.f,-1.f,0.f;
-    H.translation() << 0.2f,0.f,0.f;
+
     for(size_t i=0;i<vector.size();i++){
         H=H*vector[i].inverse();
         output_file << H.translation().transpose() << std::endl;

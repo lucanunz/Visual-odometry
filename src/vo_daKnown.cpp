@@ -46,11 +46,38 @@ IntPairVector extract_correspondences_world(const IntPairVector& correspondences
     return correspondences;
 
 }
-
+ void save_gt_trajectory(const std::string& file_path){
+    std::ifstream input_stream(file_path);
+    std::string word;
+    std::string line;
+    Vector3fVector points;
+    float n=0.f;
+    if(!input_stream.is_open()){
+        std::cout << "Unable to open " << file_path << std::endl;
+        return;
+    }
+    while (std::getline(input_stream, line)) {
+        std::stringstream ss(line);
+        Eigen::Vector3f point;
+        if(line.empty())
+            continue;
+        for (int i=0;i<4;i++)
+            ss >> word;
+        for (int i = 0; i < 2; i++) {
+            ss >> n;
+            point(i)=n;
+        }
+        point.z()=0.f;
+        points.push_back(point);
+    }
+    input_stream.close();
+    write_eigen_vectors_to_file("trajectory_gt.txt",points);
+}
 int main() {
     // Using real data 
 
     const std::string path="/home/luca/vo_data/data/";
+    save_gt_trajectory(path+"trajectory.dat");
     const std::regex pattern("^meas-\\d.*\\.dat$");
     std::set<std::string> files;
     if(!get_file_names(path,files,pattern)){
@@ -97,12 +124,15 @@ int main() {
 
     Vector3fVector triangulated;
     IntPairVector correspondences_world;
+    // Eigen::Isometry3f X_gt=Eigen::Isometry3f::Identity();
+    // X_gt.translation() << 0.f,0.f,-0.200426f;
     triangulate_points(k,X,correspondences_imgs,reference_image_points,
                         current_image_points,triangulated,correspondences_world); // At this stage correspondences_world contains the pairs (curr_idx,world_idx)
 
     // The estimated transform X is the pose 00000 in frame 00001. "triangulated" are points expressed in 00000.
 
-    VectorIsometry trajectory; trajectory.reserve(files.size()+1);
+    VectorIsometry trajectory; trajectory.reserve(files.size()+2);
+    trajectory.push_back(Eigen::Isometry3f::Identity());
     trajectory.push_back(X);
     PICPSolver solver;
     solver.setKernelThreshold(10000);
