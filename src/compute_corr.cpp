@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "files_utils.h"
 #include "camera.h"
+#include "eigen_kdtree.h"
 #include <unordered_map>
 Vector2fVector strip_id(const Vector3fVector& p_withid){
     Vector2fVector ret; ret.reserve(p_withid.size());
@@ -12,28 +13,54 @@ Vector2fVector strip_id(const Vector3fVector& p_withid){
     
     return ret;
 }
-template<typename T>
-struct matrix_hash : std::unary_function<T, size_t> {
-  std::size_t operator()(T const& matrix) const {
-    size_t seed = 0;
-    for (size_t i = 0; i < matrix.size(); ++i) {
-      auto elem = *(matrix.data() + i);
-      seed ^= std::hash<typename T::Scalar>()(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-    return seed;
-  }
-};
-IntPairVector compute_correspondences_imgs(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
-    std::unordered_map<Vector10f, int, matrix_hash<Vector10f>> map;
-    IntPairVector correspondences; correspondences.reserve(std::min(appearances1.size(),appearances2.size()));
-    for (size_t i=0;i<appearances1.size();i++)
-        map[appearances1[i]] = i;
+// Solution using hash. Unused, fragile wrt noise since we are hashing floats
+// template<typename T>
+// struct matrix_hash : std::unary_function<T, size_t> {
+//   std::size_t operator()(T const& matrix) const {
+//     size_t seed = 0;
+//     for (size_t i = 0; i < matrix.size(); ++i) {
+//       auto elem = *(matrix.data() + i);
+//       seed ^= std::hash<typename T::Scalar>()(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+//     }
+//     return seed;
+//   }
+// };
+// IntPairVector compute_correspondences_imgs(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
+//     std::unordered_map<Vector10f, int, matrix_hash<Vector10f>> map;
+//     IntPairVector correspondences; correspondences.reserve(std::min(appearances1.size(),appearances2.size()));
+//     for (size_t i=0;i<appearances1.size();i++)
+//         map[appearances1[i]] = i;
     
-    for (size_t i=0;i<appearances2.size();i++) {
-        auto it=map.find(appearances2[i]);
+//     for (size_t i=0;i<appearances2.size();i++) {
+//         auto it=map.find(appearances2[i]);
 
-        if (it!=map.end())
-            correspondences.push_back(IntPair(it->second, i));
+//         if (it!=map.end())
+//             correspondences.push_back(IntPair(it->second, i));
+        
+//     }
+//     return correspondences;
+// }
+IntPairVector compute_correspondences_imgs(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
+    using ContainerType = Vector11fVector;
+    using TreeNodeType = TreeNode_<ContainerType::iterator>;
+    IntPairVector correspondences; correspondences.reserve(std::min(appearances1.size(),appearances2.size()));
+    
+    ContainerType kd_points(appearances1.size());
+    for (size_t i=0;i<kd_points.size();i++)
+        kd_points[i] = (Vector11f() << float(i),appearances1[i]).finished();
+
+    TreeNodeType  kd_tree(kd_points.begin(), kd_points.end(), 10);
+
+    ContainerType query_points(appearances2.size());
+    for (size_t i=0;i<query_points.size();i++)
+        query_points[i] = (Vector11f() << float(i),appearances2[i]).finished();
+    
+    for(const auto& p : query_points){
+        //std::cout << p.transpose() << std::endl;
+        TreeNodeType::AnswerType neighbors;
+        Vector11f* match_full=kd_tree.bestMatchFull(p, 0.1f);
+        if(match_full)
+            correspondences.push_back(IntPair((*match_full)(0),p(0)));
         
     }
     return correspondences;

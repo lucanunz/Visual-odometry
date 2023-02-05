@@ -4,6 +4,7 @@
 #include <Eigen/Cholesky>
 #include <Eigen/StdVector>
 
+typedef Eigen::Matrix<float, 11, 1> Vector11f;
 typedef Eigen::Matrix<float, 10, 1> Vector10f;
 typedef Eigen::Matrix<float, 9, 1> Vector9f;
 typedef Eigen::Matrix<float, 6, 1> Vector6f;
@@ -18,6 +19,7 @@ typedef std::pair<Eigen::Isometry3f,Eigen::Isometry3f> IsometryPair;
 typedef std::pair<int,int> IntPair;
 typedef std::vector<IntPair > IntPairVector;
 
+typedef std::vector<Vector11f, Eigen::aligned_allocator<Vector11f> > Vector11fVector;
 typedef std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > Vector4fVector;
 typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;
 typedef std::vector<Vector10f, Eigen::aligned_allocator<Vector10f> > Vector10fVector;
