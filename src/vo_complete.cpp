@@ -5,6 +5,8 @@
 #include "files_utils.h"
 #include "camera.h"
 #include "picp_solver.h"
+#include "eigen_kdtree.h"
+#include <unordered_map>
 Vector2fVector strip_id(const Vector3fVector& p_withid){
     Vector2fVector ret; ret.reserve(p_withid.size());
 
@@ -14,21 +16,71 @@ Vector2fVector strip_id(const Vector3fVector& p_withid){
     return ret;
 }
 
-IntPairVector extract_correspondences_images(const Vector3fVector& reference_image_points_withid,const Vector3fVector& current_image_points_withid){
-    IntPairVector correspondences; correspondences.reserve(current_image_points_withid.size());
+IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
+    using ContainerType = Vector11fVector;
+    using TreeNodeType = TreeNode_<ContainerType::iterator>;
+    IntPair nN=std::minmax(appearances1.size(),appearances2.size());
+    IntPairVector correspondences; correspondences.reserve(nN.first);
+    ContainerType kd_points(nN.second);
+    ContainerType query_points(nN.first);
 
-    for(size_t i=0;i<reference_image_points_withid.size();i++){
-        for(size_t j=0;j<current_image_points_withid.size();j++){
-            if(current_image_points_withid[j].x()>reference_image_points_withid[i].x()) //measurements are ordered by the point id
-                break;
-            if(current_image_points_withid[j].x()==reference_image_points_withid[i].x()){
-                correspondences.push_back(IntPair(i,j));
-                break;
-            }
+    if(nN.second == appearances1.size()){
+        for (size_t i=0;i<kd_points.size();i++)
+            kd_points[i] = (Vector11f() << float(i),appearances1[i]).finished();
+
+        for (size_t i=0;i<query_points.size();i++)
+            query_points[i] = (Vector11f() << float(i),appearances2[i]).finished();
+    }
+    else{
+        for (size_t i=0;i<kd_points.size();i++)
+            kd_points[i] = (Vector11f() << float(i),appearances2[i]).finished();
+        
+        for (size_t i=0;i<query_points.size();i++)
+            query_points[i] = (Vector11f() << float(i),appearances1[i]).finished();
+    }
+
+    TreeNodeType  kd_tree(kd_points.begin(), kd_points.end(), 10);
+
+    for(const auto& p : query_points){
+        //std::cout << p.transpose() << std::endl;
+        TreeNodeType::AnswerType neighbors;
+        Vector11f* match_full=kd_tree.bestMatchFull(p, 0.1f);
+        if(match_full){
+            if(nN.second == appearances1.size())
+                correspondences.push_back(IntPair((*match_full)(0),p(0)));
+            else
+                correspondences.push_back(IntPair(p(0),(*match_full)(0)));
         }
+        
     }
     return correspondences;
 }
+// template<typename T>
+// struct matrix_hash : std::unary_function<T, size_t> {
+//   std::size_t operator()(T const& matrix) const {
+//     size_t seed = 0;
+//     for (size_t i = 0; i < matrix.size(); ++i) {
+//       auto elem = *(matrix.data() + i);
+//       seed ^= std::hash<typename T::Scalar>()(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+//     }
+//     return seed;
+//   }
+// };
+// IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
+//     std::unordered_map<Vector10f, int, matrix_hash<Vector10f>> map;
+//     IntPairVector correspondences; correspondences.reserve(std::min(appearances1.size(),appearances2.size()));
+//     for (size_t i=0;i<appearances1.size();i++)
+//         map[appearances1[i]] = i;
+    
+//     for (size_t i=0;i<appearances2.size();i++) {
+//         auto it=map.find(appearances2[i]);
+
+//         if (it!=map.end())
+//             correspondences.push_back(IntPair(it->second, i));
+        
+//     }
+//     return correspondences;
+// }
 
 // correspondences_imgs are (ref_idx,curr_idx), correspondences_world are (ref_idx,world_idx). We extract the pairs (curr_idx,world_idx)
 IntPairVector extract_correspondences_world(const IntPairVector& correspondences_imgs,const IntPairVector& correspondences_world){
@@ -103,13 +155,12 @@ int main() {
         std::cout << "Unable to open file 2\n";
         return -1;
     }
-
-    //the pairs are (ref_idx,curr_idx)
-    IntPairVector correspondences_imgs = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
-
     Vector2fVector reference_image_points=strip_id(reference_image_points_withid);
     Vector2fVector current_image_points=strip_id(current_image_points_withid);
-
+    
+    //the pairs are (ref_idx,curr_idx)
+    IntPairVector correspondences_imgs = compute_correspondences_images(reference_appearances,current_appearances);
+    // std::cout << correspondences_imgs.size() << std::endl;
     // initialize a camera object
     std::vector<int> int_params; //z_near,z_far,rows,cols
     Eigen::Matrix3f k;
@@ -144,19 +195,17 @@ int main() {
     //given the above swaps, now correspondences_world actually contains (ref_idx,world_idx)
     double t_start=0;
     double t_end=0;
-    std::ofstream time_file("time_known.txt");
+    std::ofstream time_file("time_kd_opt.txt");
     for(const auto& file : files){
 
         if(!get_meas_content(path+file,current_appearances,current_image_points_withid)){
             std::cout << "Unable to open file " << path+file << std::endl;
             return -1;
         }
-        t_start=getTime();
-        correspondences_imgs = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
-        t_end=getTime();
-
         current_image_points=strip_id(current_image_points_withid);
-        Vector2fVector reference_image_points=strip_id(reference_image_points_withid);
+        t_start=getTime();
+        correspondences_imgs = compute_correspondences_images(reference_appearances,current_appearances);
+        t_end=getTime();
         correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
 
         for(auto& p : triangulated)
@@ -175,13 +224,13 @@ int main() {
         // std::cout << cam.worldInCameraPose().translation().transpose() << std::endl;
         triangulate_points(k,cam.worldInCameraPose(),correspondences_imgs,reference_image_points,
                         current_image_points,triangulated,correspondences_world);
+
         reference_image_points=current_image_points;
-        reference_image_points_withid=current_image_points_withid;
         reference_appearances=current_appearances;
         std::cout << "correspondences search took: " << (t_end-t_start) << " ms" << std::endl;
         time_file << t_end-t_start << std::endl;
     }
     time_file.close();
-    save_trajectory("trajectory_est_noWorld.txt",trajectory);
+    save_trajectory("trajectory_est_complete.txt",trajectory);
     return 0;
 }

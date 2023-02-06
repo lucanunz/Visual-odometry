@@ -1,32 +1,9 @@
 #include "utils.h"
-
-std::unordered_set<int> get_valid_ids(const Vector3fVector& p1_img, const Vector3fVector& p2_img){
-    std::unordered_set<int> ids;
-    for(const auto& el1 : p1_img){
-        for(const auto & el2: p2_img){
-            if(el2(0)>el1(0)) //measurements are ordered by the point id
-                break;
-            if(el2(0)==el1(0)){
-                ids.insert(el1(0));
-                break;
-            }
-        }
-    }
-    return ids;
+double getTime(){
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return 1e3*tv.tv_sec+tv.tv_usec*1e-3;
 }
-void prune_projections(Vector3fVector& p1_img, Vector3fVector& p2_img,const std::unordered_set<int>& ids){
-    p1_img.erase(std::remove_if(p1_img.begin(),
-                                    p1_img.end(),
-                                    [&](const Eigen::Vector3f& v)-> bool 
-                                        { return (ids.find(v(0))==ids.end()); }), 
-            p1_img.end());
-    p2_img.erase(std::remove_if(p2_img.begin(),
-                                p2_img.end(),
-                                [&](const Eigen::Vector3f& v) -> bool 
-                                    { return (ids.find(v(0))==ids.end()); }),
-            p2_img.end());
-}
-
 const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X){
     Eigen::Matrix3f E;
     E=X.linear().transpose()*skew(X.translation());

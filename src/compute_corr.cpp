@@ -25,7 +25,7 @@ Vector2fVector strip_id(const Vector3fVector& p_withid){
 //     return seed;
 //   }
 // };
-// IntPairVector compute_correspondences_imgs(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
+// IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
 //     std::unordered_map<Vector10f, int, matrix_hash<Vector10f>> map;
 //     IntPairVector correspondences; correspondences.reserve(std::min(appearances1.size(),appearances2.size()));
 //     for (size_t i=0;i<appearances1.size();i++)
@@ -40,7 +40,7 @@ Vector2fVector strip_id(const Vector3fVector& p_withid){
 //     }
 //     return correspondences;
 // }
-IntPairVector compute_correspondences_imgs(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
+IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
     using ContainerType = Vector11fVector;
     using TreeNodeType = TreeNode_<ContainerType::iterator>;
     IntPairVector correspondences; correspondences.reserve(std::min(appearances1.size(),appearances2.size()));
@@ -111,7 +111,7 @@ int main() {
     }
 
     //the pair is (ref_idx,curr_idx)
-    IntPairVector correspondences_imgs = compute_correspondences_imgs(reference_appearances,current_appearances);
+    IntPairVector correspondences_imgs = compute_correspondences_images(reference_appearances,current_appearances);
     IntPairVector correspondences_imgs_gt = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
     std::cout << "sizes: " << correspondences_imgs_gt.size() << ", " << correspondences_imgs.size() << "\n";
     for(size_t i=0;i<correspondences_imgs_gt.size();i++)

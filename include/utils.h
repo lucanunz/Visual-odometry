@@ -1,9 +1,12 @@
 #pragma once
-#include <unordered_set>
 #include <iostream>
 #include <Eigen/Eigenvalues>
 #include <random>
 #include "defs.h"
+#include <sys/time.h>
+
+//! returns the current time in milliseconds
+double getTime();
 
 //! computes the rotation matrix around the x axis
 //! @param angle: angle of rotation
@@ -104,18 +107,6 @@ void generate_isometry3f(Eigen::Isometry3f& X);
 //! @param num_points: number of points to generate
 //! @returns the generated set of points
 Vector3fVector generate_points3d(const int& num_points);
-
-//! returns the ids only of the points that are present in both sets. The sets contains 3D projected vectors: id-col-row.
-//! @param p1_img: points in the first image, with their id
-//! @param p2_img: points in the second image, with their id
-//! @returns the set of valid ids
-std::unordered_set<int> get_valid_ids(const Vector3fVector& p1_img, const Vector3fVector& p2_img);
-
-//! given a set of valid ids, it removes from p1 and p2 the points whose id is not valid
-//! @param p1_img: points in the first image, with their id
-//! @param p2_img: points in the second image, with their id
-//! @param ids: set of valid ids
-void prune_projections(Vector3fVector& p1_img, Vector3fVector& p2_img,const std::unordered_set<int>& ids);
 
 //! takes an isometry as input and returns the relative essential matrix
 //! @param X: isometry3f from which compute the essential
