@@ -27,6 +27,8 @@ typedef std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> >
 typedef std::vector<Eigen::Vector2i, Eigen::aligned_allocator<Eigen::Vector2i> > Vector2iVector;
 typedef std::vector<Eigen::Isometry3f, Eigen::aligned_allocator<Eigen::Isometry3f> > VectorIsometry;
 
+//! class to represent a single point of a PointCloud. Each object is characterized by its coordinates
+//! and its appearance. In this project we use 2D pointclouds for the measurements, and 3D for the world points.
 template <int dim>
 class PointCloud {
     public:
@@ -43,6 +45,7 @@ class PointCloud {
     Vector10f _appearance;
 };
 
+//! class that represents a vector of point clouds
 template <int dim>
 class PointCloudVector{
     typedef std::vector<Eigen::Matrix<float,dim,1>,Eigen::aligned_allocator<Eigen::Matrix<float,dim,1>> > PointsVec;

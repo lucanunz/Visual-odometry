@@ -44,9 +44,10 @@ bool get_file_names(const std::string& path, std::set<std::string>& files,const 
 //! @returns false if it is not possible to open the specified file
 bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features,const bool& is_world=false);
 
+//! @overload
 //! reads the file of measurements and writes the content in a PointCloudVector structure. Ids are not retrieved
 //! @param file_path: complete path of the file to read
-//! @param points: the pointcloude that will contain the 2dpoint and the associated appearance
+//! @param points: the pointcloud that will contain the 2D point and the associated appearance
 //! @returns false if it is not possible to open the specified file
 bool get_meas_content(const std::string& file_path, PointCloudVector<2>& points);
 

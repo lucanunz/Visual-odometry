@@ -7,14 +7,6 @@
 #include "picp_solver.h"
 #include "eigen_kdtree.h"
 #include <unordered_map>
-Vector2fVector strip_id(const Vector3fVector& p_withid){
-    Vector2fVector ret; ret.reserve(p_withid.size());
-
-    for(const auto& el : p_withid)
-        ret.push_back(el.tail<2>());
-
-    return ret;
-}
 
 IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
     using ContainerType = Vector11fVector;

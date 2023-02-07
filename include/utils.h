@@ -162,8 +162,20 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
 int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
                         const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated,IntPairVector& correspondences_new);
 
+//! @overload
+//! triangulate points given their projections on two images, and the relative pose between the cameras. Computes also
+//! a new set of correspondances between the triangulated points and the points in the second image
+//! @param k: 3x3 camera matrix
+//! @param X: relative pose of the first camera expressed in the frame of the second
+//! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
+//! @param p1_img: 2D point cloud of the first image
+//! @param p2_img: 2D point cloud of the second image
+//! @param triangulated: this point cloud will contain the triangulated points and associated appearances
+//! @param correspondences_new: this vector will contain the new correspondances (first: id of the measurement, second: id of the triangulated point)
+//! @returns the number of successfully triangulated points
 int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
                         const PointCloudVector<2>& pc_1, const PointCloudVector<2>& pc_2, PointCloudVector<3>& triangulated, IntPairVector& correspondences_new);
+                        
 //! Normalizes the coordinates of the points in p to be between -1 and 1
 //! @param p: points to normalize
 //! @param T: will contain the preconditioning matrix
