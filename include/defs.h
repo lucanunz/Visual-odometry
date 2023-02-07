@@ -30,6 +30,7 @@ typedef std::vector<Eigen::Isometry3f, Eigen::aligned_allocator<Eigen::Isometry3
 template <int dim>
 class PointCloud {
     public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     PointCloud(){}
     PointCloud(const Eigen::Matrix<float,dim,1>& point, const Vector10f& appearance) :
         _point(point), _appearance(appearance) {}
@@ -44,40 +45,36 @@ class PointCloud {
 
 template <int dim>
 class PointCloudVector{
-    typedef std::vector<Eigen::Matrix<float,dim,1>, Eigen::aligned_allocator<Eigen::Matrix<float,dim,1> > > PointsVec;
+    typedef std::vector<Eigen::Matrix<float,dim,1>,Eigen::aligned_allocator<Eigen::Matrix<float,dim,1>> > PointsVec;
     public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     PointCloudVector(){}
-    PointCloudVector(size_t N): _vector(N) {}
-    PointCloudVector& operator=(PointCloudVector other){
-        std::swap(_vector,other.vector());
-        return *this;
-    }
-    inline void push_back(const PointCloud<dim>& pc){ _vector.push_back(pc); }
-    inline PointCloud<dim> back() const { return _vector.back(); }
-    inline void resize(size_t N){ _vector.resize(N);}
-    inline size_t size() const {return _vector.size(); }
-    inline void clear(){ _vector.clear(); }
-    
-    PointCloud<dim> operator [](int i) const {return _vector.at(i); }
-    PointCloud<dim>& operator [](int i) {return _vector.at(i); }
+    PointCloudVector(size_t N): _points(N),_appearances(N) {}
 
-    PointsVec points(){
-        PointsVec ret(_vector.size());
-        if(_vector.size()>0){
-            for(size_t i=0;i<_vector.size();i++)
-                ret[i]=_vector[i].point();
-        }
-        return ret;
+    void push_back(const PointCloud<dim>& pc){ 
+        _points.push_back(pc.point());
+        _appearances.push_back(pc.appearance());
     }
-    Vector10fVector appearances(){
-        Vector10fVector ret(_vector.size());
-        if(_vector.size()>0){
-            for(size_t i=0;i<_vector.size();i++)
-                ret[i]=_vector[i].appearance();
-        }
-        return ret;
+
+    void resize(size_t N){ 
+        _points.resize(N); 
+        _appearances.resize(N); 
     }
-    std::vector<PointCloud<dim>>& vector(){ return _vector; }
+    void reserve(size_t N){ 
+        _points.reserve(N); 
+        _appearances.reserve(N); 
+    }
+    inline size_t size() const {return _points.size(); }
+    void clear(){ 
+        _points.clear(); 
+        _appearances.clear(); 
+    }
+
+    inline PointsVec& points(){ return _points;}
+    inline Vector10fVector& appearances(){ return _appearances;}
+    inline PointsVec points() const { return _points;}
+    inline Vector10fVector appearances() const { return _appearances;}
     protected:
-    std::vector<PointCloud<dim>> _vector;
+    PointsVec _points;
+    Vector10fVector _appearances;
 };

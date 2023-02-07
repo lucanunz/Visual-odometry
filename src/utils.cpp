@@ -246,21 +246,21 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
     const Eigen::Matrix3f iRiK = iX.linear()*iK;
     const Eigen::Vector3f t= iX.translation();
     int n_success=0;
-    triangulated.resize(correspondences.size());
+    triangulated.clear(); triangulated.reserve(correspondences.size());
     correspondences_new.resize(correspondences.size());
     for (const IntPair& correspondence: correspondences){
         const int idx_first=correspondence.first;
         const int idx_second=correspondence.second;
         Eigen::Vector3f d1;
-        d1 << pc_1[idx_first].point(),1;
+        d1 << pc_1.points().at(idx_first),1;
         d1 = iK*d1;
         Eigen::Vector3f d2;
-        d2 << pc_2[idx_second].point(),1;
+        d2 << pc_2.points().at(idx_second),1;
         d2 = iRiK*d2;
         Eigen::Vector3f p;
         if(triangulate_point(d1,d2,t,p)){
             correspondences_new[n_success]=IntPair(idx_second,n_success);
-            triangulated[n_success]=PointCloud<3>(p,pc_2[idx_second].appearance());
+            triangulated.push_back(PointCloud<3>(p,pc_2.appearances().at(idx_second)));
             n_success++;
         }
     } 

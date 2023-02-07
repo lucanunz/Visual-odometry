@@ -24,7 +24,7 @@ IntPairVector compute_correspondences_images(const Vector10fVector& appearances1
     ContainerType kd_points(nN.second);
     ContainerType query_points(nN.first);
 
-    if(nN.second == appearances1.size()){
+    if(nN.second == (int) appearances1.size()){
         for (size_t i=0;i<kd_points.size();i++)
             kd_points[i] = (Vector11f() << float(i),appearances1[i]).finished();
 
@@ -46,7 +46,7 @@ IntPairVector compute_correspondences_images(const Vector10fVector& appearances1
         TreeNodeType::AnswerType neighbors;
         Vector11f* match_full=kd_tree.bestMatchFull(p, 0.1f);
         if(match_full){
-            if(nN.second == appearances1.size())
+            if(nN.second == (int) appearances1.size())
                 correspondences.push_back(IntPair((*match_full)(0),p(0)));
             else
                 correspondences.push_back(IntPair(p(0),(*match_full)(0)));
@@ -142,24 +142,20 @@ int main() {
     files.erase(files.begin());
 
     //read data from file1 and file2
-    Vector3fVector reference_image_points_withid; //vector where each element is point_id-col-row where [col,row] is where it is observed in the image
-    Vector10fVector reference_appearances;
-    Vector3fVector current_image_points_withid;
-    Vector10fVector current_appearances;
 
-    if(!get_meas_content(path+first_file,reference_appearances,reference_image_points_withid)){
+    PointCloudVector<2> reference_pc;
+    PointCloudVector<2> current_pc;
+    if(!get_meas_content(path+first_file,reference_pc)){
         std::cout << "Unable to open file 1\n";
         return -1;
     }
-    if(!get_meas_content(path+second_file,current_appearances,current_image_points_withid)){
+    if(!get_meas_content(path+second_file,current_pc)){
         std::cout << "Unable to open file 2\n";
         return -1;
     }
-    Vector2fVector reference_image_points=strip_id(reference_image_points_withid);
-    Vector2fVector current_image_points=strip_id(current_image_points_withid);
     
     //the pairs are (ref_idx,curr_idx)
-    IntPairVector correspondences_imgs = compute_correspondences_images(reference_appearances,current_appearances);
+    IntPairVector correspondences_imgs = compute_correspondences_images(reference_pc.appearances(),current_pc.appearances());
     // std::cout << correspondences_imgs.size() << std::endl;
     // initialize a camera object
     std::vector<int> int_params; //z_near,z_far,rows,cols
@@ -171,14 +167,14 @@ int main() {
     }
     Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
 
-    const Eigen::Isometry3f X = estimate_transform(cam.cameraMatrix(), correspondences_imgs, reference_image_points, current_image_points);
+    const Eigen::Isometry3f X = estimate_transform(cam.cameraMatrix(), correspondences_imgs, reference_pc.points(), current_pc.points());
 
-    Vector3fVector triangulated;
+    PointCloudVector<3> triangulated_pc;
     IntPairVector correspondences_world;
     // Eigen::Isometry3f X_gt=Eigen::Isometry3f::Identity();
     // X_gt.translation() << 0.f,0.f,-0.200426f;
-    triangulate_points(k,X,correspondences_imgs,reference_image_points,
-                        current_image_points,triangulated,correspondences_world); // At this stage correspondences_world contains the pairs (curr_idx,world_idx)
+    triangulate_points(k,X,correspondences_imgs,reference_pc,
+                        current_pc,triangulated_pc,correspondences_world); // At this stage correspondences_world contains the pairs (curr_idx,world_idx)
 
     // The estimated transform X is the pose 00000 in frame 00001. "triangulated" are points expressed in 00000.
 
@@ -189,44 +185,43 @@ int main() {
     solver.setKernelThreshold(10000);
     Eigen::Isometry3f X_curr=X;
 
-    reference_image_points=current_image_points;
-    reference_image_points_withid=current_image_points_withid;
-    reference_appearances=current_appearances;
+    reference_pc=current_pc;
     //given the above swaps, now correspondences_world actually contains (ref_idx,world_idx)
     double t_start=0;
     double t_end=0;
     std::ofstream time_file("time_kd_opt.txt");
+    Vector3fVector triangulated_transformed;
     for(const auto& file : files){
 
-        if(!get_meas_content(path+file,current_appearances,current_image_points_withid)){
+        if(!get_meas_content(path+file,current_pc)){
             std::cout << "Unable to open file " << path+file << std::endl;
             return -1;
         }
-        current_image_points=strip_id(current_image_points_withid);
         t_start=getTime();
-        correspondences_imgs = compute_correspondences_images(reference_appearances,current_appearances);
+        correspondences_imgs = compute_correspondences_images(reference_pc.appearances(),current_pc.appearances());
         t_end=getTime();
         correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
 
-        for(auto& p : triangulated)
-            p=X_curr*p;
+        triangulated_transformed.resize(triangulated_pc.points().size());
+        for(size_t i=0;i<triangulated_pc.points().size();i++)
+            triangulated_transformed[i]=X_curr*triangulated_pc.points()[i];
 
         cam.setWorldInCameraPose(Eigen::Isometry3f::Identity());
-        solver.init(cam,triangulated,current_image_points); //should find the current pose in the frame of the previous
+        solver.init(cam,triangulated_transformed,current_pc.points()); //should find the current pose in the frame of the previous
         for(int i=0;i<1000;i++)
             solver.oneRound(correspondences_world,false);
         cam=solver.camera();
 
         trajectory.push_back(cam.worldInCameraPose());
         X_curr=cam.worldInCameraPose();
-        // std::cout << "******************* File " << file << std::endl;
-        // std::cout << cam.worldInCameraPose().linear() << std::endl;
-        // std::cout << cam.worldInCameraPose().translation().transpose() << std::endl;
-        triangulate_points(k,cam.worldInCameraPose(),correspondences_imgs,reference_image_points,
-                        current_image_points,triangulated,correspondences_world);
+        std::cout << "******************* File " << file << std::endl;
+        std::cout << cam.worldInCameraPose().linear() << std::endl;
+        std::cout << cam.worldInCameraPose().translation().transpose() << std::endl;
+        triangulate_points(k,cam.worldInCameraPose(),correspondences_imgs,reference_pc,
+                        current_pc,triangulated_pc,correspondences_world);
 
-        reference_image_points=current_image_points;
-        reference_appearances=current_appearances;
+        reference_pc=current_pc;
+
         std::cout << "correspondences search took: " << (t_end-t_start) << " ms" << std::endl;
         time_file << t_end-t_start << std::endl;
     }
