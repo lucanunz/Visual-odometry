@@ -162,6 +162,8 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
 int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
                         const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated,IntPairVector& correspondences_new);
 
+PointCloudVector<3> triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
+                        const PointCloudVector<2>& pc_1, const PointCloudVector<2>& pc_2, IntPairVector& correspondences_new);
 //! Normalizes the coordinates of the points in p to be between -1 and 1
 //! @param p: points to normalize
 //! @param T: will contain the preconditioning matrix

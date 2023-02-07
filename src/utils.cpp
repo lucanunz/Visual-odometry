@@ -239,6 +239,35 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
     correspondences_new.resize(n_success);
     return n_success;
 }
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
+                        const PointCloudVector<2>& pc_1, const PointCloudVector<2>& pc_2, PointCloudVector<3>& triangulated, IntPairVector& correspondences_new){
+    const Eigen::Isometry3f iX = X.inverse();
+    const Eigen::Matrix3f iK = k.inverse();
+    const Eigen::Matrix3f iRiK = iX.linear()*iK;
+    const Eigen::Vector3f t= iX.translation();
+    int n_success=0;
+    triangulated.resize(correspondences.size());
+    correspondences_new.resize(correspondences.size());
+    for (const IntPair& correspondence: correspondences){
+        const int idx_first=correspondence.first;
+        const int idx_second=correspondence.second;
+        Eigen::Vector3f d1;
+        d1 << pc_1[idx_first].point(),1;
+        d1 = iK*d1;
+        Eigen::Vector3f d2;
+        d2 << pc_2[idx_second].point(),1;
+        d2 = iRiK*d2;
+        Eigen::Vector3f p;
+        if(triangulate_point(d1,d2,t,p)){
+            correspondences_new[n_success]=IntPair(idx_second,n_success);
+            triangulated[n_success]=PointCloud<3>(p,pc_2[idx_second].appearance());
+            n_success++;
+        }
+    } 
+    triangulated.resize(n_success);
+    correspondences_new.resize(n_success);
+    return n_success;
+}
 const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 
                                             const Vector2fVector& p1_img, const Vector2fVector& p2_img){
 

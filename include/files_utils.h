@@ -36,13 +36,19 @@ void save_trajectory(const std::string& file_path, const VectorIsometry& vector)
 //! @param pattern: regular expression to be matched
 bool get_file_names(const std::string& path, std::set<std::string>& files,const std::regex& pattern);
 
-//! reads the file of measurements and writes the content in appearances and features
+//! reads the file of measurements and writes the content in appearances and features. Ids are retrieved
 //! @param file_path: complete path of the file to read
 //! @param appearances: will contain the appearance of each measurement found in the file
 //! @param features: will contain id-col-row of each measurement in the file
 //! @param is_world: if true, it means we are reading the file "world.dat". Otherwise, "meas-xxxxx.dat".
 //! @returns false if it is not possible to open the specified file
 bool get_meas_content(const std::string& file_path, Vector10fVector& appearances, Vector3fVector& features,const bool& is_world=false);
+
+//! reads the file of measurements and writes the content in a PointCloudVector structure. Ids are not retrieved
+//! @param file_path: complete path of the file to read
+//! @param points: the pointcloude that will contain the 2dpoint and the associated appearance
+//! @returns false if it is not possible to open the specified file
+bool get_meas_content(const std::string& file_path, PointCloudVector<2>& points);
 
 //! retrieves the camera parameters from the specified file
 //! @param file_path: complete path of the file to read

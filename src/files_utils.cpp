@@ -55,7 +55,42 @@ bool get_meas_content(const std::string& file_path, Vector10fVector& appearances
     input_stream.close();
     return true;
 }
+bool get_meas_content(const std::string& file_path, PointCloudVector<2>& points){
+    points.clear();
+    std::ifstream input_stream(file_path);
+    std::string word;
+    std::string line;
+    float n=0.f;
+    if(!input_stream.is_open())
+        return false;
 
+    // skip the first three lines
+    for (int i = 0; i < 3; i++)
+        std::getline(input_stream, line);
+
+    while (std::getline(input_stream, line)) {
+        std::stringstream ss(line);
+        Vector10f appearance;
+        Eigen::Vector2f feature;
+        if(line.empty())
+            continue;
+        ss >> word;
+        ss >> word; // skip the first 3 words
+        ss >> word;
+        
+        for (int i = 0; i < 12; i++) {
+            ss >> n;
+            if( i < 2)
+                feature(i)=n;
+            else{
+                appearance(i-2)=n;
+            }
+        }
+        points.push_back(PointCloud<2>(feature,appearance));
+    }
+    input_stream.close();
+    return true;
+}
 bool get_camera_params(const std::string& file_path, std::vector<int>& int_params, Eigen::Matrix3f& k){
     std::ifstream input_stream(file_path);
     std::string keyword;
