@@ -20,6 +20,7 @@ typedef std::pair<int,int> IntPair;
 typedef std::vector<IntPair > IntPairVector;
 
 typedef std::vector<Vector11f, Eigen::aligned_allocator<Vector11f> > Vector11fVector;
+typedef std::vector<Vector6f, Eigen::aligned_allocator<Vector6f> > Vector6fVector;
 typedef std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > Vector4fVector;
 typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;
 typedef std::vector<Vector10f, Eigen::aligned_allocator<Vector10f> > Vector10fVector;
@@ -71,6 +72,21 @@ class PointCloudVector{
     void clear(){ 
         _points.clear(); 
         _appearances.clear(); 
+    }
+    void update(const PointCloudVector<dim>& cloud){
+        bool found=false;
+        for(size_t i=0;i<cloud.size();i++){
+            for(size_t j=0;j<_appearances.size() && !found ;j++){
+                if (_appearances[j]==cloud.appearances().at(i)){
+                    _points[j]=(cloud.points().at(i)+_points[j])/2.f;
+                    found=true;
+                }
+            }
+            if(found)
+                found=false;
+            else
+                this->push_back(PointCloud<dim>(cloud.points().at(i),cloud.appearances().at(i)));
+        }
     }
 
     inline PointsVec& points(){ return _points;}
