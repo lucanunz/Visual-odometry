@@ -81,3 +81,10 @@ class PointCloudVector{
     PointsVec _points;
     Vector10fVector _appearances;
 };
+
+inline PointCloudVector<3> operator*(Eigen::Isometry3f X, const PointCloudVector<3> pc){
+    PointCloudVector<3> ret;
+    for(size_t i=0;i<pc.size();i++)
+        ret.push_back(PointCloud<3>(X*pc.points().at(i),pc.appearances().at(i)));
+    return ret;
+}

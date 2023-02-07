@@ -154,17 +154,17 @@ const IsometryPair essential2transformPair(const Eigen::Matrix3f& E){
         u=svd.matrixU();
         R1=v*w*u.transpose();
     }
-    Eigen::Isometry3f X1;
+    Eigen::Isometry3f X1=Eigen::Isometry3f::Identity();
     X1.linear()=R1;
     Eigen::Matrix3f t_skew=R1*E;
-    X1.translation()=Eigen::Vector3f(t_skew(2,1)-t_skew(1,2),t_skew(0,2)-t_skew(2,0),t_skew(1,0)-t_skew(0,1));
+    X1.translation()=Eigen::Vector3f(t_skew(2,1),t_skew(0,2),t_skew(1,0));
 
     //2nd solution
     Eigen::Matrix3f R2=v*w.transpose()*u.transpose();
-    Eigen::Isometry3f X2;
+    Eigen::Isometry3f X2=Eigen::Isometry3f::Identity();
     X2.linear()=R2;
     t_skew=R2*E;
-    X2.translation()=Eigen::Vector3f(t_skew(2,1)-t_skew(1,2),t_skew(0,2)-t_skew(2,0),t_skew(1,0)-t_skew(0,1));
+    X2.translation()=Eigen::Vector3f(t_skew(2,1),t_skew(0,2),t_skew(1,0));
     IsometryPair X12(X1,X2);
     return X12;
 }
@@ -276,7 +276,7 @@ const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPai
     const IsometryPair X12=essential2transformPair(E);
 
     int n_test=0,n_in_front=0;
-    Eigen::Isometry3f X_best;
+    Eigen::Isometry3f X_best=Eigen::Isometry3f::Identity();
     Vector3fVector triang;
     
     Eigen::Isometry3f X_test=std::get<0>(X12);

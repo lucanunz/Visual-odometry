@@ -11,3 +11,4 @@ A folder `exec/` will be created inside the build folders, with the following ex
 - `real_init`: the relative position between the first 2 set of real measurements is estimated using epipolar geometry
 - `picp_known_real`: picp is performed on the given data, assuming that the position of the points in the world is known and also data association in known
 - `vo_daKnown`: the relative position between the first 2 set of measurements is estimated using epipolar geometry, then triangulation is performed to find a set of world points, and then iteratively picp is executed between subsequent poses, each time triangulating to find a new set of world points. Data association is given
+- `vo_complete`: same as before, but data association is not given. Correspondances are retrieved using a kd tree: leveraging on the appearances of the points.
