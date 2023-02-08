@@ -25,7 +25,7 @@
     inline  bool projectPoint(Eigen::Vector2f& image_point,
                               const Eigen::Vector3f& world_point){
       Eigen::Vector3f camera_point=_world_in_camera_pose*world_point;
-      if (camera_point.z()<=0 || camera_point.z()>_z_far || camera_point.z()<_z_near)
+      if (camera_point.z()>_z_far || camera_point.z()<_z_near)
         return false;
       Eigen::Vector3f projected_point=_camera_matrix*camera_point;
       image_point=projected_point.head<2>()*(1./projected_point.z());
