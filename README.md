@@ -1,5 +1,6 @@
 # Visual-odometry
-On this branch, the estimation of the pose of the robot is done in $SE(3)$, unlike the main branch.
+On this branch, the estimation of the pose of the robot is done in $SE(2)$ and the whole map is built and used during picp, unlike the main branch.
+
 To build this project:
 - create build directory with `mkdir build` and navigate to it with `cd build`
 - then do `cmake ..` and `make`
@@ -31,18 +32,18 @@ where matlab-like indexing is used. These last two quantities are used for evalu
 
 ## What to run
 After having built the project as stated above, run the created executable ```vo_complete``` that will generate the following files
--```world.txt``` containing all the true world points, one on each line
--```trajectory_gt.txt``` containing on each line the true position of the robot in the form $[t_x \ t_y \ t_z]$, expressed in the world frame
--```map.txt``` containing all the estimated world points, one on each line
--```map_appearances.txt``` containing on line $i$ the appearance of the point in ```map.txt``` on line $i$
--```trajectory_est_complete.txt```containing on each line the estimated position of the robot in the form $[t_x \ t_y \ t_z]$, expressed in the world frame
--```trajectory_est_data.txt``` that contains the estimated pose of the robot expressed in the world frame. Pose $i$ is written on this file with one line for $[t_{x_i} \ t_{y_i} \ t_{z_i}]$, and the next three lines contain the rotation matrix $\textbf{R}_i$ written in row major order
+- ```world.txt``` containing all the true world points, one on each line
+- ```trajectory_gt.txt``` containing on each line the true position of the robot in the form $[t_x \ t_y \ t_z]$, expressed in the world frame
+- ```map.txt``` containing all the estimated world points, one on each line
+- ```map_appearances.txt``` containing on line $i$ the appearance of the point in ```map.txt``` on line $i$
+- ```trajectory_est_complete.txt```containing on each line the estimated position of the robot in the form $[t_x \ t_y \ t_z]$, expressed in the world frame
+- ```trajectory_est_data.txt``` that contains the estimated pose of the robot expressed in the world frame. Pose $i$ is written on this file with one line for $[t_{x_i} \ t_{y_i} \ t_{z_i}]$, and the next three lines contain the rotation matrix $\textbf{R}_i$ written in row major order
 
 Then, run the executable ```evaluation``` that will read from the ground truth trajectory file ```trajectory.dat```,```world.dat``` (not the ones created before), and from some of the newly created files, will print in the terminal the RMS between the estimated and true points and will generate
--```out_performance.txt``` where on line $i$ we have the orientation error and translation ratio for pose $i$ as detailed above
--```map_corected.txt``` containing the same points as ```map.txt``` but scaled by the found translation ratio
--```world_pruned.txt``` that contains the true position of the world points that are in map
--```arrows.txt``` that on each line has the coordinate of the estimated world point and the corresponding true coordinates
+- ```out_performance.txt``` where on line $i$ we have the orientation error and translation ratio for pose $i$ as detailed above
+- ```map_corected.txt``` containing the same points as ```map.txt``` but scaled by the found translation ratio
+- ```world_pruned.txt``` that contains the true position of the world points that are in map
+- ```arrows.txt``` that on each line has the coordinate of the estimated world point and the corresponding true coordinates
 ## Visualization
 The generated ```*.txt``` files are meant to be used with gnuplot as follows
 To compare estimated and true trajectory, write in the terminal
