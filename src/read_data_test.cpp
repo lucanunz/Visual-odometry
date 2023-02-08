@@ -33,14 +33,14 @@ int main() {
     }
     
     // initialize a camera object
-    std::vector<int> int_params; int_params.reserve(4); //z_near,z_far,rows,cols
+    std::vector<int> int_params; int_params.reserve(4); //z_near,z_far,cols,rows
     Eigen::Matrix3f k;
 
     if(!get_camera_params(path+"camera.dat",int_params,k)){
         std::cout << "Unable to get camera parameters\n";
         return -1; 
     }
-    Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
+    Camera cam(int_params[3],int_params[2],int_params[0],int_params[1],k);
     std::cout << k << std::endl;
 
     return 0;

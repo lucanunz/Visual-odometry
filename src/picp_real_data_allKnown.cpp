@@ -69,7 +69,7 @@ IntPairVector computeFakeCorrespondencesWorld(const Vector3fVector& image_points
         return -1;     
     }
     // initialize a camera object
-    std::vector<int> int_params; //z_near,z_far,rows,cols
+    std::vector<int> int_params; //z_near,z_far,cols,rows
     Eigen::Matrix3f k;
 
     if(!get_camera_params(path+"camera.dat",int_params,k)){
@@ -78,7 +78,7 @@ IntPairVector computeFakeCorrespondencesWorld(const Vector3fVector& image_points
     }
     // --------
 
-    Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
+    Camera cam(int_params[3],int_params[2],int_params[0],int_params[1],k);
 
     Eigen::Isometry3f X0; //relative pose of the 0 position of the camera in the world frame. Used to compare with the gt trajectory
     X0.linear() << 0.f, 0.f, 1.f,

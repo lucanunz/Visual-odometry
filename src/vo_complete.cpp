@@ -179,14 +179,14 @@ int main() {
     IntPairVector correspondences_imgs = compute_correspondences_images(reference_pc.appearances(),current_pc.appearances());
     // std::cout << correspondences_imgs.size() << std::endl;
     // initialize a camera object
-    std::vector<int> int_params; //z_near,z_far,rows,cols
+    std::vector<int> int_params; //z_near,z_far,cols,rows
     Eigen::Matrix3f k;
 
     if(!get_camera_params(path+"camera.dat",int_params,k)){
         std::cout << "Unable to get camera parameters\n";
         return -1; 
     }
-    Camera cam(int_params[2],int_params[3],int_params[0],int_params[1],k);
+    Camera cam(int_params[3],int_params[2],int_params[0],int_params[1],k);
 
     const Eigen::Isometry3f X = estimate_transform(cam.cameraMatrix(), correspondences_imgs, reference_pc.points(), current_pc.points());
 
