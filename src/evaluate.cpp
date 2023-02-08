@@ -115,17 +115,16 @@ int main(){
         ratio.push_back(X_rel_gt.translation().norm()/X_rel.translation().norm());
     }
     std::ofstream output_file("out_performance.txt");
-    for(size_t i=1;i<ratio.size();i++){
-        std::cout << orientation_error[i] << ", " << ratio[i] << std::endl;
+    for(size_t i=1;i<ratio.size();i++)
         output_file << orientation_error[i] << " " << ratio[i] << std::endl;
-    }
+    
     output_file.close();
     Vector3fVector map_est=read<3>("map.txt");
     Vector3fVector map_corrected;
-    float mean_ratio=median(ratio);
-    std::cout << mean_ratio << std::endl;
+    const float rat=median(ratio);
+    std::cout << rat << std::endl;
     for(const auto& p:map_est)
-        map_corrected.push_back(p*mean_ratio);
+        map_corrected.push_back(p*rat);
     
     write_eigen_vectors_to_file("map_corrected.txt",map_corrected);
     Vector10fVector map_appearances=read<10>("map_appearances.txt");
