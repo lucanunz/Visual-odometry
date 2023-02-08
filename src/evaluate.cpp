@@ -1,12 +1,14 @@
 #include <iostream>
+#include <cmath>
 #include "utils.h"
 #include "files_utils.h"
 
-Vector3fVector read(const std::string& file_path){
+template <int dim>
+std::vector<Eigen::Matrix<float,dim,1>,Eigen::aligned_allocator<Eigen::Matrix<float,dim,1>> > read(const std::string& file_path){
     std::ifstream input_stream(file_path);
     std::string word;
     std::string line;
-    Vector3fVector points;
+    std::vector<Eigen::Matrix<float,dim,1>,Eigen::aligned_allocator<Eigen::Matrix<float,dim,1>> > points;
     float n=0.f;
     if(!input_stream.is_open()){
         std::cout << "Unable to open " << file_path << std::endl;
@@ -14,10 +16,10 @@ Vector3fVector read(const std::string& file_path){
     }
     while (std::getline(input_stream, line)) {
         std::stringstream ss(line);
-        Eigen::Vector3f point;
+        Eigen::Matrix<float,dim,1> point;
         if(line.empty())
             continue;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < dim; i++) {
             ss >> n;
             point(i)=n;
         }
@@ -89,13 +91,13 @@ VectorIsometry get_est_data(const std::string& file_path){
     input_stream.close();
     return trajectory;
 }
+float median(std::vector<float> &v)
+{
+    size_t n = v.size() / 2;
+    nth_element(v.begin(), v.begin()+n, v.end());
+    return v[n];
+}
 int main(){
-    // Vector3fVector gt=read("trajectory_gt.txt");
-    // Vector3fVector est=read("trajectory_est_complete.txt");
-    // for(size_t i=0;i<gt.size();i++){
-    //     std::cout << gt[i].x()/est[i].x() << ", " << gt[i].y()/est[i].y() << ", " << gt[i].z()/est[i].z() << std::endl;
-    //     std::cout << gt[i].norm()/est[i].norm() << std::endl;
-    // }
     const std::string path="/home/luca/vo_data/data/";
     VectorIsometry gt_data=get_gt_data(path+"trajectory.dat");
     VectorIsometry traj_est_data=get_est_data("trajectory_est_data.txt");
@@ -118,5 +120,37 @@ int main(){
         output_file << orientation_error[i] << " " << ratio[i] << std::endl;
     }
     output_file.close();
+    Vector3fVector map_est=read<3>("map.txt");
+    Vector3fVector map_corrected;
+    float mean_ratio=median(ratio);
+    std::cout << mean_ratio << std::endl;
+    for(const auto& p:map_est)
+        map_corrected.push_back(p*mean_ratio);
     
+    write_eigen_vectors_to_file("map_corrected.txt",map_corrected);
+    Vector10fVector map_appearances=read<10>("map_appearances.txt");
+    Vector3fVector world_points;
+    Vector10fVector world_points_appearances;
+    if(!get_meas_content(path+"world.dat",world_points_appearances,world_points,true)){
+        std::cout << "Unable to open world file\n";
+        return -1;     
+    }
+    Vector3fVector world_pruned;
+    Vector6fVector world_map_points;
+    float rms=0.f;
+    for(size_t i=0;i<map_corrected.size();i++){
+        for(size_t j=0;j<world_points.size();j++)
+            if(map_appearances[i]==world_points_appearances[j]){
+                world_map_points.push_back((Vector6f() << map_corrected[i],world_points[j]).finished());
+                rms+=pow((map_corrected[i]-world_points[j]).norm(),2);
+                world_pruned.push_back(world_points[j]);
+                break;
+            }
+    }
+    rms*=(1.f/world_pruned.size());
+    rms=sqrt(rms);
+    std::cout << "RMS: " << rms << std::endl;
+    write_eigen_vectors_to_file("arrows.txt",world_map_points);
+    write_eigen_vectors_to_file("world_pruned.txt",world_pruned);
+
 }

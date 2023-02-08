@@ -1,4 +1,5 @@
 # Visual-odometry
+On this branch, the estimation of the pose of the robot is done in $SE(3)$, unlike the main branch.
 To build this project:
 - create build directory with `mkdir build` and navigate to it with `cd build`
 - then do `cmake ..` and `make`

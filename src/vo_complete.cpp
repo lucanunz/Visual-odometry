@@ -256,17 +256,7 @@ int main() {
 
     map=H*map;
     write_eigen_vectors_to_file("map.txt",map.points());
-
-    //to plot the arrows between real world points and estimated ones
-    Vector6fVector world_map_points;
-    for(size_t i=0;i<map.size();i++){
-        for(size_t j=0;j<world_points.size();j++)
-            if(map.appearances().at(i)==world_points_appearances[j]){
-                world_map_points.push_back((Vector6f() << map.points().at(i),world_points[j]).finished());
-                break;
-            }
-    }
-    write_eigen_vectors_to_file("arrows.txt",world_map_points);
+    write_eigen_vectors_to_file("map_appearances.txt",map.appearances());
     save_trajectory("trajectory_est_complete.txt",trajectory);
     save_trajectory_data("trajectory_est_data.txt",trajectory);
     return 0;
