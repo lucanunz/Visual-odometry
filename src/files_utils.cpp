@@ -141,3 +141,22 @@ void save_trajectory(const std::string& file_path, const VectorIsometry& vector)
     
     output_file.close();
 }
+void save_trajectory_data(const std::string& file_path, const VectorIsometry& vector){
+    std::ofstream output_file(file_path);
+    if(!output_file.is_open()) {
+        std::cout << "Error opening file" << std::endl;
+        return;
+    }
+    Eigen::Isometry3f H=Eigen::Isometry3f::Identity();
+    H.linear() << 0.f, 0.f, 1.f,
+            -1.f,0.f,0.f,
+            0.f,-1.f,0.f;
+
+    for(size_t i=0;i<vector.size();i++){
+        H=H*vector[i].inverse();
+        output_file << H.translation().transpose() << std::endl;
+        output_file << H.linear() << std::endl;
+    }
+    
+    output_file.close();
+}

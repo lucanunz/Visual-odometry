@@ -25,10 +25,15 @@ void write_eigen_vectors_to_file(const std::string& file_path, const std::vector
     output_file.close();
 }
 
-//! saves the trajectory stored in vector in the file_path specified
+//! saves the position vector of the trajectory stored in vector in the file_path specified
 //! @param file_path: complete path where to save the file
-//! @param vector: a vector of relative position vectors to save
+//! @param vector: a vector of relative poses
 void save_trajectory(const std::string& file_path, const VectorIsometry& vector);
+
+//! saves the position vector and orientation matrix of the trajectory stored in vector in the file_path specified
+//! @param file_path: complete path where to save the file
+//! @param vector: a vector of relative poses
+void save_trajectory_data(const std::string& file_path, const VectorIsometry& vector);
 
 //! writes in files the file names (in alphabetical order) found in path that match the regex
 //! @param path: path where to look for the files

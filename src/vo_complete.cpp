@@ -248,5 +248,6 @@ int main() {
     }
     write_eigen_vectors_to_file("arrows.txt",world_map_points);
     save_trajectory("trajectory_est_complete.txt",trajectory);
+    save_trajectory_data("trajectory_est_data.txt",trajectory);
     return 0;
 }
