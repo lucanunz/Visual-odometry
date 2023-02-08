@@ -115,10 +115,9 @@ int main(){
         ratio.push_back(X_rel_gt.translation().norm()/X_rel.translation().norm());
     }
     std::ofstream output_file("out_performance.txt");
-    for(size_t i=1;i<ratio.size();i++){
-        std::cout << orientation_error[i] << ", " << ratio[i] << std::endl;
+    for(size_t i=1;i<ratio.size();i++)
         output_file << orientation_error[i] << " " << ratio[i] << std::endl;
-    }
+    
     output_file.close();
     Vector3fVector map_est=read<3>("map.txt");
     Vector3fVector map_corrected;
