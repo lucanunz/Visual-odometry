@@ -78,7 +78,7 @@ class PointCloudVector{
         for(size_t i=0;i<cloud.size();i++){
             for(size_t j=0;j<_appearances.size() && !found ;j++){
                 if (_appearances[j]==cloud.appearances().at(i)){
-                    _points[j]=(cloud.points().at(i)+_points[j])/2.f;
+                    _points[j]=cloud.points().at(i);
                     found=true;
                 }
             }
