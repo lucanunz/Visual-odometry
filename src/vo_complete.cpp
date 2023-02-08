@@ -116,7 +116,30 @@ IntPairVector extract_correspondences_world(const IntPairVector& correspondences
     input_stream.close();
     write_eigen_vectors_to_file("trajectory_gt.txt",points);
 }
+IntPairVector compute_correspondences_map(const PointCloudVector<3>& map,const PointCloudVector<2>& measurements){
+    using ContainerType = Vector11fVector;
+    using TreeNodeType = TreeNode_<ContainerType::iterator>;
 
+    IntPairVector correspondences; correspondences.reserve(measurements.size());
+    ContainerType kd_points(map.size());
+    ContainerType query_points(measurements.size());
+
+    for (size_t i=0;i<kd_points.size();i++)
+        kd_points[i] = (Vector11f() << float(i),map.appearances().at(i)).finished(); 
+    for (size_t i=0;i<query_points.size();i++)
+        query_points[i] = (Vector11f() << float(i),measurements.appearances().at(i)).finished();
+
+    TreeNodeType  kd_tree(kd_points.begin(), kd_points.end(), 10);
+
+    for(const auto& p : query_points){
+        Vector11f* match_full=kd_tree.bestMatchFull(p, 0.1f);
+        if(match_full){
+            correspondences.push_back(IntPair(p(0),(*match_full)(0)));
+        }
+
+    }
+    return correspondences;
+}
 int main() {
     // Using real data 
 
@@ -189,10 +212,13 @@ int main() {
     std::ofstream time_file("time_kd_opt.txt");
     PointCloudVector<3> triangulated_transformed;
     PointCloudVector<3> map;
+    PointCloudVector<3> points_for_picp;
     map.update(triangulated_pc);
     Eigen::Isometry3f history=X.inverse();
-    Eigen::Isometry3f X_curr=X;
-
+    Eigen::Isometry3f H=Eigen::Isometry3f::Identity();
+    H.linear() << 0.f, 0.f, 1.f,
+            -1.f,0.f,0.f,
+            0.f,-1.f,0.f;
     for(const auto& file : files){
 
         if(!get_meas_content(path+file,current_pc)){
@@ -201,19 +227,18 @@ int main() {
         }
         t_start=getTime();
         correspondences_imgs = compute_correspondences_images(reference_pc.appearances(),current_pc.appearances());
+        IntPairVector correspondences_map=compute_correspondences_map(map,current_pc);
         t_end=getTime();
-        correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
 
-        triangulated_transformed=X_curr*triangulated_pc;
+        points_for_picp=history.inverse()*map;
 
         cam.setWorldInCameraPose(Eigen::Isometry3f::Identity());
-        solver.init(cam,triangulated_transformed.points(),current_pc.points()); //should find the current pose in the frame of the previous
+        solver.init(cam,points_for_picp.points(),current_pc.points()); //should find the current pose in the frame of the previous
         for(int i=0;i<1000;i++)
-            solver.oneRound(correspondences_world,false);
+            solver.oneRound(correspondences_map,false);
         cam=solver.camera();
 
         trajectory.push_back(cam.worldInCameraPose());
-        X_curr=cam.worldInCameraPose();
         std::cout << "******************* File " << file << std::endl;
         std::cout << cam.worldInCameraPose().linear() << std::endl;
         std::cout << cam.worldInCameraPose().translation().transpose() << std::endl;
@@ -228,11 +253,6 @@ int main() {
         time_file << t_end-t_start << std::endl;
     }
     time_file.close();
-
-    Eigen::Isometry3f H=Eigen::Isometry3f::Identity();
-    H.linear() << 0.f, 0.f, 1.f,
-            -1.f,0.f,0.f,
-            0.f,-1.f,0.f;
 
     map=H*map;
     write_eigen_vectors_to_file("map.txt",map.points());
