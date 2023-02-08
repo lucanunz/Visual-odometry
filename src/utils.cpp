@@ -1,32 +1,9 @@
 #include "utils.h"
-
-std::unordered_set<int> get_valid_ids(const Vector3fVector& p1_img, const Vector3fVector& p2_img){
-    std::unordered_set<int> ids;
-    for(const auto& el1 : p1_img){
-        for(const auto & el2: p2_img){
-            if(el2(0)>el1(0)) //measurements are ordered by the point id
-                break;
-            if(el2(0)==el1(0)){
-                ids.insert(el1(0));
-                break;
-            }
-        }
-    }
-    return ids;
+double getTime(){
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return 1e3*tv.tv_sec+tv.tv_usec*1e-3;
 }
-void prune_projections(Vector3fVector& p1_img, Vector3fVector& p2_img,const std::unordered_set<int>& ids){
-    p1_img.erase(std::remove_if(p1_img.begin(),
-                                    p1_img.end(),
-                                    [&](const Eigen::Vector3f& v)-> bool 
-                                        { return (ids.find(v(0))==ids.end()); }), 
-            p1_img.end());
-    p2_img.erase(std::remove_if(p2_img.begin(),
-                                p2_img.end(),
-                                [&](const Eigen::Vector3f& v) -> bool 
-                                    { return (ids.find(v(0))==ids.end()); }),
-            p2_img.end());
-}
-
 const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X){
     Eigen::Matrix3f E;
     E=X.linear().transpose()*skew(X.translation());
@@ -211,17 +188,17 @@ const IsometryPair essential2transformPair(const Eigen::Matrix3f& E){
         u=svd.matrixU();
         R1=v*w*u.transpose();
     }
-    Eigen::Isometry3f X1;
+    Eigen::Isometry3f X1=Eigen::Isometry3f::Identity();
     X1.linear()=R1;
     Eigen::Matrix3f t_skew=R1*E;
-    X1.translation()=Eigen::Vector3f(t_skew(2,1)-t_skew(1,2),t_skew(0,2)-t_skew(2,0),t_skew(1,0)-t_skew(0,1));
+    X1.translation()=Eigen::Vector3f(t_skew(2,1),t_skew(0,2),t_skew(1,0));
 
     //2nd solution
     Eigen::Matrix3f R2=v*w.transpose()*u.transpose();
-    Eigen::Isometry3f X2;
+    Eigen::Isometry3f X2=Eigen::Isometry3f::Identity();
     X2.linear()=R2;
     t_skew=R2*E;
-    X2.translation()=Eigen::Vector3f(t_skew(2,1)-t_skew(1,2),t_skew(0,2)-t_skew(2,0),t_skew(1,0)-t_skew(0,1));
+    X2.translation()=Eigen::Vector3f(t_skew(2,1),t_skew(0,2),t_skew(1,0));
     IsometryPair X12(X1,X2);
     return X12;
 }
@@ -296,6 +273,35 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
     correspondences_new.resize(n_success);
     return n_success;
 }
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
+                        const PointCloudVector<2>& pc_1, const PointCloudVector<2>& pc_2, PointCloudVector<3>& triangulated, IntPairVector& correspondences_new){
+    const Eigen::Isometry3f iX = X.inverse();
+    const Eigen::Matrix3f iK = k.inverse();
+    const Eigen::Matrix3f iRiK = iX.linear()*iK;
+    const Eigen::Vector3f t= iX.translation();
+    int n_success=0;
+    triangulated.clear(); triangulated.reserve(correspondences.size());
+    correspondences_new.resize(correspondences.size());
+    for (const IntPair& correspondence: correspondences){
+        const int idx_first=correspondence.first;
+        const int idx_second=correspondence.second;
+        Eigen::Vector3f d1;
+        d1 << pc_1.points().at(idx_first),1;
+        d1 = iK*d1;
+        Eigen::Vector3f d2;
+        d2 << pc_2.points().at(idx_second),1;
+        d2 = iRiK*d2;
+        Eigen::Vector3f p;
+        if(triangulate_point(d1,d2,t,p)){
+            correspondences_new[n_success]=IntPair(idx_second,n_success);
+            triangulated.push_back(PointCloud<3>(p,pc_2.appearances().at(idx_second)));
+            n_success++;
+        }
+    } 
+    triangulated.resize(n_success);
+    correspondences_new.resize(n_success);
+    return n_success;
+}
 const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPairVector& correspondences, 
                                             const Vector2fVector& p1_img, const Vector2fVector& p2_img){
 
@@ -304,7 +310,7 @@ const Eigen::Isometry3f estimate_transform(const Eigen::Matrix3f k, const IntPai
     const IsometryPair X12=essential2transformPair(E);
 
     int n_test=0,n_in_front=0;
-    Eigen::Isometry3f X_best;
+    Eigen::Isometry3f X_best=Eigen::Isometry3f::Identity();
     Vector3fVector triang;
     
     Eigen::Isometry3f X_test=std::get<0>(X12);

@@ -10,7 +10,7 @@ Vector2fVector strip_id(const Vector3fVector& p_withid){
 
     for(const auto& el : p_withid)
         ret.push_back(el.tail<2>());
-    
+
     return ret;
 }
 
@@ -46,11 +46,38 @@ IntPairVector extract_correspondences_world(const IntPairVector& correspondences
     return correspondences;
 
 }
-
+ void save_gt_trajectory(const std::string& file_path){
+    std::ifstream input_stream(file_path);
+    std::string word;
+    std::string line;
+    Vector3fVector points;
+    float n=0.f;
+    if(!input_stream.is_open()){
+        std::cout << "Unable to open " << file_path << std::endl;
+        return;
+    }
+    while (std::getline(input_stream, line)) {
+        std::stringstream ss(line);
+        Eigen::Vector3f point;
+        if(line.empty())
+            continue;
+        for (int i=0;i<4;i++)
+            ss >> word;
+        for (int i = 0; i < 2; i++) {
+            ss >> n;
+            point(i)=n;
+        }
+        point.z()=0.f;
+        points.push_back(point);
+    }
+    input_stream.close();
+    write_eigen_vectors_to_file("trajectory_gt.txt",points);
+}
 int main() {
     // Using real data 
-    
+
     const std::string path="/home/luca/vo_data/data/";
+    save_gt_trajectory(path+"trajectory.dat");
     const std::regex pattern("^meas-\\d.*\\.dat$");
     std::set<std::string> files;
     if(!get_file_names(path,files,pattern)){
@@ -67,7 +94,7 @@ int main() {
     Vector10fVector reference_appearances;
     Vector3fVector current_image_points_withid;
     Vector10fVector current_appearances;
-    
+
     if(!get_meas_content(path+first_file,reference_appearances,reference_image_points_withid)){
         std::cout << "Unable to open file 1\n";
         return -1;
@@ -104,7 +131,8 @@ int main() {
 
     // The estimated transform X is the pose 00000 in frame 00001. "triangulated" are points expressed in 00000.
 
-    VectorIsometry trajectory; trajectory.reserve(files.size()+1);
+    VectorIsometry trajectory; trajectory.reserve(files.size()+2);
+    trajectory.push_back(Eigen::Isometry3f::Identity());
     trajectory.push_back(X);
     PICPSolver solver;
     solver.setKernelThreshold(10000);
@@ -114,15 +142,19 @@ int main() {
     reference_image_points_withid=current_image_points_withid;
     reference_appearances=current_appearances;
     //given the above swaps, now correspondences_world actually contains (ref_idx,world_idx)
-
+    double t_start=0;
+    double t_end=0;
+    std::ofstream time_file("time_known.txt");
     for(const auto& file : files){
 
         if(!get_meas_content(path+file,current_appearances,current_image_points_withid)){
             std::cout << "Unable to open file " << path+file << std::endl;
             return -1;
         }
-
+        t_start=getTime();
         correspondences_imgs = extract_correspondences_images(reference_image_points_withid,current_image_points_withid);
+        t_end=getTime();
+
         current_image_points=strip_id(current_image_points_withid);
         reference_image_points=strip_id(reference_image_points_withid);
         correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
@@ -146,7 +178,10 @@ int main() {
         reference_image_points=current_image_points;
         reference_image_points_withid=current_image_points_withid;
         reference_appearances=current_appearances;
+        std::cout << "correspondences search took: " << (t_end-t_start) << " ms" << std::endl;
+        time_file << t_end-t_start << std::endl;
     }
+    time_file.close();
     save_trajectory("trajectory_est_noWorld.txt",trajectory);
     return 0;
 }

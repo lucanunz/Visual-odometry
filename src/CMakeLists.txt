@@ -5,3 +5,5 @@ add_executable(picp_test picp_solver_test.cpp utils.cpp files_utils.cpp camera.c
 add_executable(whole_test essential_picp_test.cpp utils.cpp files_utils.cpp camera.cpp picp_solver.cpp)
 add_executable(picp_known_real picp_real_data_allKnown.cpp utils.cpp files_utils.cpp camera.cpp picp_solver.cpp)
 add_executable(vo_daKnown vo_daKnown.cpp utils.cpp files_utils.cpp camera.cpp picp_solver.cpp)
+add_executable(vo_complete vo_complete.cpp utils.cpp files_utils.cpp camera.cpp picp_solver.cpp)
+add_executable(evaluation evaluate.cpp utils.cpp files_utils.cpp)

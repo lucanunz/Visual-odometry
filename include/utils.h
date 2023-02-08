@@ -1,9 +1,12 @@
 #pragma once
-#include <unordered_set>
 #include <iostream>
 #include <Eigen/Eigenvalues>
 #include <random>
 #include "defs.h"
+#include <sys/time.h>
+
+//! returns the current time in milliseconds
+double getTime();
 
 //! computes the rotation matrix around the x axis
 //! @param angle: angle of rotation
@@ -105,18 +108,6 @@ void generate_isometry3f(Eigen::Isometry3f& X);
 //! @returns the generated set of points
 Vector3fVector generate_points3d(const int& num_points);
 
-//! returns the ids only of the points that are present in both sets. The sets contains 3D projected vectors: id-col-row.
-//! @param p1_img: points in the first image, with their id
-//! @param p2_img: points in the second image, with their id
-//! @returns the set of valid ids
-std::unordered_set<int> get_valid_ids(const Vector3fVector& p1_img, const Vector3fVector& p2_img);
-
-//! given a set of valid ids, it removes from p1 and p2 the points whose id is not valid
-//! @param p1_img: points in the first image, with their id
-//! @param p2_img: points in the second image, with their id
-//! @param ids: set of valid ids
-void prune_projections(Vector3fVector& p1_img, Vector3fVector& p2_img,const std::unordered_set<int>& ids);
-
 //! takes an isometry as input and returns the relative essential matrix
 //! @param X: isometry3f from which compute the essential
 const Eigen::Matrix3f transform2essential(const Eigen::Isometry3f X);
@@ -171,6 +162,20 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
 int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
                         const Vector2fVector& p1_img, const Vector2fVector& p2_img, Vector3fVector& triangulated,IntPairVector& correspondences_new);
 
+//! @overload
+//! triangulate points given their projections on two images, and the relative pose between the cameras. Computes also
+//! a new set of correspondances between the triangulated points and the points in the second image
+//! @param k: 3x3 camera matrix
+//! @param X: relative pose of the first camera expressed in the frame of the second
+//! @param correspondences: correspondences (first: idx of the point in the first image, second: idx of the corresponding point in the second image)
+//! @param p1_img: 2D point cloud of the first image
+//! @param p2_img: 2D point cloud of the second image
+//! @param triangulated: this point cloud will contain the triangulated points and associated appearances
+//! @param correspondences_new: this vector will contain the new correspondances (first: id of the measurement, second: id of the triangulated point)
+//! @returns the number of successfully triangulated points
+int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, const IntPairVector& correspondences,
+                        const PointCloudVector<2>& pc_1, const PointCloudVector<2>& pc_2, PointCloudVector<3>& triangulated, IntPairVector& correspondences_new);
+                        
 //! Normalizes the coordinates of the points in p to be between -1 and 1
 //! @param p: points to normalize
 //! @param T: will contain the preconditioning matrix
