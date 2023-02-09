@@ -7,7 +7,7 @@
 #include <string>
 #include <sstream>
 #include "defs.h"
-
+#include "PointCloud.h"
 //! writes Eigen vectors to a file, one for each row. They are to be used in gnuplot, e.g.
 //! splot "p1.txt" u 1:2:3 w p pt 7,"p2.txt" u 1:2:3 w p pt 7 lt rgb "#FF0000"
 //! @param file_path: path to the file where to write the vectors

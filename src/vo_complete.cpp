@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "picp_solver.h"
 #include "eigen_kdtree.h"
+#include "PointCloud.h"
 #include <unordered_map>
 
 IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){

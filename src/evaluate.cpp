@@ -94,13 +94,13 @@ VectorIsometry get_est_data(const std::string& file_path){
 float median(std::vector<float> &v)
 {
     size_t n = v.size() / 2;
-    nth_element(v.begin(), v.begin()+n, v.end());
+    std::nth_element(v.begin(), v.begin()+n, v.end());
     return v[n];
 }
 int main(){
     const std::string path="/home/luca/vo_data/data/";
-    VectorIsometry gt_data=get_gt_data(path+"trajectory.dat");
-    VectorIsometry traj_est_data=get_est_data("trajectory_est_data.txt");
+    const VectorIsometry gt_data=get_gt_data(path+"trajectory.dat");
+    const VectorIsometry traj_est_data=get_est_data("trajectory_est_data.txt");
     std::vector<float> orientation_error;
     std::vector<float> ratio;
     for(size_t i=1;i<gt_data.size();i++){
@@ -119,15 +119,15 @@ int main(){
         output_file << orientation_error[i] << " " << ratio[i] << std::endl;
     
     output_file.close();
-    Vector3fVector map_est=read<3>("map.txt");
+    const Vector3fVector map_est=read<3>("map.txt");
     Vector3fVector map_corrected;
-    float mean_ratio=median(ratio);
-    std::cout << mean_ratio << std::endl;
+    const float median_ratio=median(ratio);
+    std::cout << "ratio used for map correction: " << median_ratio << std::endl;
     for(const auto& p:map_est)
-        map_corrected.push_back(p*mean_ratio);
+        map_corrected.push_back(p*median_ratio);
     
     write_eigen_vectors_to_file("map_corrected.txt",map_corrected);
-    Vector10fVector map_appearances=read<10>("map_appearances.txt");
+    const Vector10fVector map_appearances=read<10>("map_appearances.txt");
     Vector3fVector world_points;
     Vector10fVector world_points_appearances;
     if(!get_meas_content(path+"world.dat",world_points_appearances,world_points,true)){
@@ -136,19 +136,19 @@ int main(){
     }
     Vector3fVector world_pruned;
     Vector6fVector world_map_points;
-    float rms=0.f;
+    float rmse=0.f;
     for(size_t i=0;i<map_corrected.size();i++){
         for(size_t j=0;j<world_points.size();j++)
             if(map_appearances[i]==world_points_appearances[j]){
                 world_map_points.push_back((Vector6f() << map_corrected[i],world_points[j]).finished());
-                rms+=pow((map_corrected[i]-world_points[j]).norm(),2);
+                rmse+=pow((map_corrected[i]-world_points[j]).norm(),2);
                 world_pruned.push_back(world_points[j]);
                 break;
             }
     }
-    rms*=(1.f/world_pruned.size());
-    rms=sqrt(rms);
-    std::cout << "RMS: " << rms << std::endl;
+    rmse*=(1.f/world_pruned.size());
+    rmse=sqrt(rmse);
+    std::cout << "RMSE: " << rmse << std::endl;
     write_eigen_vectors_to_file("arrows.txt",world_map_points);
     write_eigen_vectors_to_file("world_pruned.txt",world_pruned);
 

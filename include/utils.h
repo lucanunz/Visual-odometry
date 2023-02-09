@@ -5,6 +5,7 @@
 #include "defs.h"
 #include <sys/time.h>
 #include <unordered_set>
+#include "PointCloud.h"
 
 //! returns the current time in milliseconds
 double getTime();
