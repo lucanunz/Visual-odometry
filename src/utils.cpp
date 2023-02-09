@@ -68,6 +68,42 @@ Vector2fVector normalize(const Vector2fVector& p,Eigen::Matrix3f& T){
     return ret;
 }
 
+Vector2fVector normalizeGauss(const Vector2fVector& p,Eigen::Matrix3f& T){
+    const Eigen::Vector2f invalid_point(-1.f,-1.f);
+    Vector2fVector p_valid; p_valid.reserve(p.size());
+    std::unordered_set<int> invalid_ids;
+    Eigen::Vector2f mu = Eigen::Vector2f::Zero();
+
+    for(size_t i=0;i<p.size();i++){
+        if(p[i] != invalid_point){
+            p_valid.push_back(p[i]);
+            mu+=p[i];
+        }
+        else
+            invalid_ids.insert(i);
+    }
+    const size_t N=p_valid.size();
+    mu = mu/N;
+    Eigen::Matrix2f sigma=Eigen::Matrix2f::Zero();
+    for(const auto& v : p_valid){
+        Eigen::Vector2f c=v-mu;
+        sigma+=c*c.transpose();
+    }
+    sigma=sigma*1/(N-1);
+    Eigen::Matrix2f chol(sigma.llt().matrixL());
+
+    T=Eigen::Matrix3f::Identity();
+    T.block<2,2>(0,0)=chol.inverse();
+    T.block<2,1>(0,2)=-T.block<2,2>(0,0)*mu;
+
+    Vector2fVector ret=p;
+    for(size_t i=0;i<p.size();i++)
+        if(invalid_ids.find(i)==invalid_ids.end())
+            ret[i]=T.block<2,2>(0,0)*p[i]+T.block<2,1>(0,2);     
+    
+    return ret;
+}
+
 const Eigen::Matrix3f estimate_fundamental(const IntPairVector& correspondences, 
                                             const Vector2fVector& p1_img, const Vector2fVector& p2_img){
     if(correspondences.size()<8){

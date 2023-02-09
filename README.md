@@ -51,12 +51,20 @@ To compare estimated and true trajectory, write in the terminal
 gnuplot
 gnuplot>splot "trajectory_gt.txt" u 1:2:3 w p,"trajectory_est_complete.txt" u 1:2:3 w p
 ```
+and the plot will be as the following one
+<img src="imgs/trajectories_SE3.png" width="550" height="412">
+
+
 To show the estimated trajectory, together with the estimated map, the true world points and the correspondences between them, write in the gnuplot shell
 ```
-gnuplot>splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1:2:3 w p ps 0.7 title "corrected","arrows.txt" using 1:2:3:($4-$1):($5-$2):($6-$3)
-with vectors nohead title "correspondences","trajectory_est_complete.txt" u 1:2:3 w p pt 7 title "estimated trajectory"
+splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1:2:3 w p ps 0.7 title "corrected","arrows.txt" using 1:2:3:($4-$1):($5-$2):($6-$3) with vectors nohead title "correspondences","trajectory_est_complete.txt" u 1:2:3 w p pt 7 title "estimated trajectory"
 ```
+and you will obtain
+<img src="imgs/points_SE3.png">
 To have a graph of the orientation error and the ratio, write in the gnuplot shell
 ```
-gnuplot>plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2 w l title "ratio"
+plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2 w l title "ratio"
 ```
+to obtain
+<img src="imgs/errors_SE3.png" width="500" height="375">
+
