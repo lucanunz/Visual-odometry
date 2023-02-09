@@ -5,6 +5,8 @@
 #include "defs.h"
 #include <sys/time.h>
 #include <unordered_set>
+#include "PointCloud.h"
+
 //! returns the current time in milliseconds
 double getTime();
 
@@ -180,8 +182,9 @@ int triangulate_points(const Eigen::Matrix3f& k, const Eigen::Isometry3f& X, con
 //! @param p: points to normalize
 //! @param T: will contain the preconditioning matrix
 //! @returns the normalized points
-Vector2fVector normalize(const Vector2fVector& p, Eigen::Matrix3f& T);
+Vector2fVector normalize(const Vector2fVector& p, Eigen::Matrix3f& T);    
 
+//! Not used
 //! Normalizes the coordinates of the points in p to be centered in 0 and have unitary covariance
 //! @param p: points to normalize
 //! @param T: will contain the preconditioning matrix
