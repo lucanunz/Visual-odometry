@@ -46,17 +46,29 @@ Then, run the executable ```evaluation``` that will read from the ground truth t
 - ```arrows.txt``` that on each line has the coordinate of the estimated world point and the corresponding true coordinates
 ## Visualization
 The generated ```*.txt``` files are meant to be used with gnuplot as follows
+
 To compare estimated and true trajectory, write in the terminal
 ```
 gnuplot
 gnuplot>splot "trajectory_gt.txt" u 1:2:3 w p,"trajectory_est_complete.txt" u 1:2:3 w p
 ```
+<p align="center">
+<img src="imgs/trajectories_SE2.png" width="550" height="412">
+<\p>
+
 To show the estimated trajectory, together with the estimated map, the true world points and the correspondences between them, write in the gnuplot shell
 ```
-gnuplot>splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1:2:3 w p ps 0.7 title "corrected","arrows.txt" using 1:2:3:($4-$1):($5-$2):($6-$3)
-with vectors nohead title "correspondences","trajectory_est_complete.txt" u 1:2:3 w p pt 7 title "estimated trajectory"
+splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1:2:3 w p ps 0.7 title "corrected","arrows.txt" using 1:2:3:($4-$1):($5-$2):($6-$3) with vectors nohead title "correspondences","trajectory_est_complete.txt" u 1:2:3 w p pt 7 title "estimated trajectory"
 ```
+
+<p align="center">
+<img src="imgs/points_SE2.png">
+</p>
+
 To have a graph of the orientation error and the ratio, write in the gnuplot shell
 ```
-gnuplot>plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2 w l title "ratio"
+plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2 w l title "ratio"
 ```
+<p align="center">
+<img src="imgs/errors_SE2.png" width="500" height="375">
+</p>
