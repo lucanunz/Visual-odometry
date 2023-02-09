@@ -71,7 +71,7 @@ Eigen::Matrix<Scalar_,3,3> Rotation(const Eigen::Matrix<Scalar_,3,1>& angles) {
 //! @param v: 6dim vector
 //! @returns the computed isometry
 inline Eigen::Isometry3f v2tEuler(const Vector6f& v){
-  Eigen::Isometry3f T;
+  Eigen::Isometry3f T=Eigen::Isometry3f::Identity();
   T.linear()=Rotation(Eigen::Vector3f(v.tail<3>()));
   T.translation()=v.head<3>();
   return T;
