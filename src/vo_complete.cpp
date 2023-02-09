@@ -219,6 +219,7 @@ int main() {
     H.linear() << 0.f, 0.f, 1.f,
             -1.f,0.f,0.f,
             0.f,-1.f,0.f;
+    H.translation() << 0.2f,0.f,0.f;
     for(const auto& file : files){
 
         if(!get_meas_content(path+file,current_pc)){
