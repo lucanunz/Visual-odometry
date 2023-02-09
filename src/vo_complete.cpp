@@ -234,7 +234,7 @@ int main() {
     H.linear() << 0.f, 0.f, 1.f,
             -1.f,0.f,0.f,
             0.f,-1.f,0.f;
-
+    H.translation() << 0.2f,0.f,0.f;
     map=H*map;
     write_eigen_vectors_to_file("map.txt",map.points());
     write_eigen_vectors_to_file("map_appearances.txt",map.appearances());

@@ -130,12 +130,13 @@ void save_trajectory(const std::string& file_path, const VectorIsometry& vector)
         return;
     }
     Eigen::Isometry3f H=Eigen::Isometry3f::Identity();
-    H.linear() << 0.f, 0.f, 1.f,
+    Eigen::Isometry3f cameraInRobot=Eigen::Isometry3f::Identity();
+    cameraInRobot.linear() << 0.f, 0.f, 1.f,
             -1.f,0.f,0.f,
             0.f,-1.f,0.f;
-
+    cameraInRobot.translation() << 0.2f,0.f,0.f;
     for(size_t i=0;i<vector.size();i++){
-        H=H*vector[i].inverse();
+        H=H*cameraInRobot*vector[i].inverse()*cameraInRobot.inverse(); //this gives the i-th pose of the robot in the world
         output_file << H.translation().transpose() << std::endl;
     }
     
@@ -148,12 +149,13 @@ void save_trajectory_data(const std::string& file_path, const VectorIsometry& ve
         return;
     }
     Eigen::Isometry3f H=Eigen::Isometry3f::Identity();
-    H.linear() << 0.f, 0.f, 1.f,
+    Eigen::Isometry3f cameraInRobot=Eigen::Isometry3f::Identity();
+    cameraInRobot.linear() << 0.f, 0.f, 1.f,
             -1.f,0.f,0.f,
             0.f,-1.f,0.f;
-
+    cameraInRobot.translation() << 0.2f,0.f,0.f;
     for(size_t i=0;i<vector.size();i++){
-        H=H*vector[i].inverse();
+        H=H*cameraInRobot*vector[i].inverse()*cameraInRobot.inverse(); //this gives the i-th pose of the robot in the world
         output_file << H.translation().transpose() << std::endl;
         output_file << H.linear() << std::endl;
     }
