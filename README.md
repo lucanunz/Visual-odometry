@@ -9,7 +9,7 @@ In this branch, the pose of the robot is estimated in $SE(3)$ and the approach i
 
 Measurements are characterized by 10 numbers that describe the appearance of the associated world points: data association is performed using a kd-tree where the points have 11 dimension. The first component of these points is an id, the other 10 are their appearances: clearly, internal computation of the kd-tree ignores the first component.
 
-For a different approach, see the branch ***est_SE2***. All the other branches have been used to develop features that have been merged in this branch.
+For a different approach, see the branch ***est_SE2***. All the other branches have been used to develop features that have been merged in these two branches.
 
 ## Build
 
