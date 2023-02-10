@@ -59,9 +59,9 @@ gnuplot>splot "trajectory_gt.txt" u 1:2:3 w p,"trajectory_est_complete.txt" u 1:
 The estimated trajectory in the plot shown above has an error on the z-axis of the order of $10^{-5}$, much less than the estimate done on the main branch where the error reached 0.1.
 
 
-To show the estimated trajectory, together with the estimated map, the true world points and the correspondences between them, write in the gnuplot shell
+To show the true trajectory, together with the estimated map, the true world points and the correspondences between them, write in the gnuplot shell
 ```
-splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1:2:3 w p ps 0.7 title "corrected","arrows.txt" using 1:2:3:($4-$1):($5-$2):($6-$3) with vectors nohead title "correspondences","trajectory_est_complete.txt" u 1:2:3 w p pt 7 title "estimated trajectory"
+splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1:2:3 w p ps 0.7 title "corrected","arrows.txt" using 1:2:3:($4-$1):($5-$2):($6-$3) with vectors nohead title "correspondences","trajectory_gt.txt" u 1:2:3 w p pt 7 title "gt trajectory"
 ```
 
 <p align="center">
