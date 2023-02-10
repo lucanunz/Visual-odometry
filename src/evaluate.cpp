@@ -104,15 +104,15 @@ int main(){
     std::vector<float> orientation_error;
     std::vector<float> ratio;
     for(size_t i=1;i<gt_data.size();i++){
-        Eigen::Isometry3f X_prev=traj_est_data[i-1];
-        Eigen::Isometry3f X_curr=traj_est_data[i];
-        Eigen::Isometry3f X_prev_gt=gt_data[i-1];
-        Eigen::Isometry3f X_curr_gt=gt_data[i];
-        auto X_rel=X_prev.inverse()*X_curr;
-        auto X_rel_gt=X_prev_gt.inverse()*X_curr_gt;
-        Eigen::Matrix3f error=Eigen::Matrix3f::Identity()-X_rel.linear().transpose()*X_rel_gt.linear();
+        const Eigen::Isometry3f X_prev=traj_est_data[i-1];
+        const Eigen::Isometry3f X_curr=traj_est_data[i];
+        const Eigen::Isometry3f X_prev_gt=gt_data[i-1];
+        const Eigen::Isometry3f X_curr_gt=gt_data[i];
+        const auto X_rel=X_prev.inverse()*X_curr;
+        const auto X_rel_gt=X_prev_gt.inverse()*X_curr_gt;
+        const Eigen::Matrix3f error=Eigen::Matrix3f::Identity()-X_rel.linear().transpose()*X_rel_gt.linear();
         orientation_error.push_back(error.trace());
-        ratio.push_back(X_rel_gt.translation().norm()/X_rel.translation().norm());
+        ratio.push_back(X_rel.translation().norm()/X_rel_gt.translation().norm());
     }
     std::ofstream output_file("out_performance.txt");
     for(size_t i=1;i<ratio.size();i++)
@@ -121,7 +121,7 @@ int main(){
     output_file.close();
     const Vector3fVector map_est=read<3>("map.txt");
     Vector3fVector map_corrected;
-    const float median_ratio=median(ratio);
+    const float median_ratio=1./median(ratio);
     std::cout << "ratio used for map correction: " << median_ratio << std::endl;
     for(const auto& p:map_est)
         map_corrected.push_back(p*median_ratio);

@@ -54,7 +54,7 @@ gnuplot>splot "trajectory_gt.txt" u 1:2:3 w p,"trajectory_est_complete.txt" u 1:
 ```
 <p align="center">
 <img src="imgs/trajectories_SE3.png" width="550" height="412">
-<\p>
+</p>
 
 To show the estimated trajectory, together with the estimated map, the true world points and the correspondences between them, write in the gnuplot shell
 ```
@@ -65,6 +65,8 @@ splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1
 <img src="imgs/points_SE3.png">
 </p>
 
+The computed RMSE between the true world points and the estimated ones (corrected by the ratio) is $0.184143$.
+
 To have a graph of the orientation error and the ratio, write in the gnuplot shell
 ```
 plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2 w l title "ratio"
@@ -72,3 +74,5 @@ plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2
 <p align="center">
 <img src="imgs/errors_SE3.png" width="500" height="375">
 </p>
+
+The orientation error is of the order of $10^{-6}$.
