@@ -77,3 +77,4 @@ plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2
 <p align="center">
 <img src="imgs/errors_SE2.png" width="500" height="375">
 </p>
+The orientation error is of the order of $10^{-6}$.
