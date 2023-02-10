@@ -46,6 +46,7 @@ IntPairVector compute_correspondences_images(const Vector10fVector& appearances1
 
     return correspondences;
 }
+// Hash approach 
 // template<typename T>
 // struct matrix_hash : std::unary_function<T, size_t> {
 //   std::size_t operator()(T const& matrix) const {
@@ -57,38 +58,22 @@ IntPairVector compute_correspondences_images(const Vector10fVector& appearances1
 //     return seed;
 //   }
 // };
-// IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
-//     std::unordered_map<Vector10f, int, matrix_hash<Vector10f>> map;
-//     IntPairVector correspondences; correspondences.reserve(std::min(appearances1.size(),appearances2.size()));
-//     for (size_t i=0;i<appearances1.size();i++)
-//         map[appearances1[i]] = i;
+// IntPairVector compute_correspondences_map(const PointCloudVector<3>& map,const PointCloudVector<2>& measurements){
+//     std::unordered_map<Vector10f, int, matrix_hash<Vector10f>> hash_map;
+//     IntPairVector correspondences; correspondences.reserve(measurements.size());
+//     for (size_t i=0;i<map.appearances().size();i++)
+//         hash_map[map.appearances().at(i)] = i;
     
-//     for (size_t i=0;i<appearances2.size();i++) {
-//         auto it=map.find(appearances2[i]);
+//     for (size_t i=0;i<measurements.size();i++) {
+//         auto it=hash_map.find(measurements.appearances().at(i));
 
-//         if (it!=map.end())
-//             correspondences.push_back(IntPair(it->second, i));
+//         if (it!=hash_map.end())
+//             correspondences.push_back(IntPair(i,it->second));
         
 //     }
 //     return correspondences;
 // }
 
-// correspondences_imgs are (ref_idx,curr_idx), correspondences_world are (ref_idx,world_idx). We extract the pairs (curr_idx,world_idx)
-IntPairVector extract_correspondences_world(const IntPairVector& correspondences_imgs,const IntPairVector& correspondences_world){
-    IntPairVector correspondences; correspondences.reserve(correspondences_imgs.size());
-
-    for(size_t i=0;i<correspondences_imgs.size();i++){
-        const int idx_ref=correspondences_imgs[i].first;
-        for(size_t j=0;j<correspondences_world.size();j++){
-            if(correspondences_world[j].first==idx_ref){
-                correspondences.push_back(IntPair(correspondences_imgs[i].second,correspondences_world[j].second));
-                break;
-            }
-        }
-    }
-    return correspondences;
-
-}
  void save_gt_trajectory(const std::string& file_path){
     std::ifstream input_stream(file_path);
     std::string word;
@@ -116,6 +101,7 @@ IntPairVector extract_correspondences_world(const IntPairVector& correspondences
     input_stream.close();
     write_eigen_vectors_to_file("trajectory_gt.txt",points);
 }
+// kd-tree solution
 IntPairVector compute_correspondences_map(const PointCloudVector<3>& map,const PointCloudVector<2>& measurements){
     using ContainerType = Vector11fVector;
     using TreeNodeType = TreeNode_<ContainerType::iterator>;
@@ -140,6 +126,24 @@ IntPairVector compute_correspondences_map(const PointCloudVector<3>& map,const P
     }
     return correspondences;
 }
+// Exhaustive search
+// IntPairVector compute_correspondences_map(const PointCloudVector<3>& map,const PointCloudVector<2>& measurements){
+
+//     IntPairVector correspondences; correspondences.reserve(measurements.size());
+    
+//     for(size_t i=0;i<map.size();i++){
+//         const Vector10f app=map.appearances().at(i);
+//         for(size_t j=0;j<measurements.size();j++){
+//             if(app==measurements.appearances().at(j)){
+//                 correspondences.push_back(IntPair(j,i));
+//                 break;
+//             }
+//         }
+//     }
+
+
+//     return correspondences;
+// }
 int main() {
     // Using real data 
 
@@ -209,7 +213,7 @@ int main() {
     //given the above swaps, now correspondences_world actually contains (ref_idx,world_idx)
     double t_start=0;
     double t_end=0;
-    std::ofstream time_file("time_kd_opt.txt");
+    std::ofstream time_file("time_kd.txt");
     PointCloudVector<3> triangulated_transformed;
     PointCloudVector<3> map;
     PointCloudVector<3> points_for_picp;
@@ -226,8 +230,8 @@ int main() {
             std::cout << "Unable to open file " << path+file << std::endl;
             return -1;
         }
-        t_start=getTime();
         correspondences_imgs = compute_correspondences_images(reference_pc.appearances(),current_pc.appearances());
+        t_start=getTime();
         IntPairVector correspondences_map=compute_correspondences_map(map,current_pc);
         t_end=getTime();
 

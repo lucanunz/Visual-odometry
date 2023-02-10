@@ -7,7 +7,7 @@ In this branch, the pose of the robot is estimated in $SE(2)$ and the approach i
 - given this pose and the measurements, triangulate to have a set of world points
 - perform projective icp (picp) iteratively between subsequent poses. At each pose, we update the world map with the previously triangulated points, and use the whole map in picp
 
-Data association is done in the same way as in the main branch.
+Data association is done in the same way as in the main branch. At the end of this README, a performance comparison between data association approaches is presented
 
 The estimation of the pose is done in $SE(2)$ by considering the state still to be a $SE(3)$ pose, but the perturbation $\Delta x$ is 3 dimensional. Hence, only planar poses are estimated.
 
@@ -53,3 +53,18 @@ plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2
 </p>
 
 The orientation error is of the order of $10^{-6}$, and the points where the ratio is not plotted is when the robot stops moving, hence the norm of the ground truth translation is 0.
+
+## Data association
+
+Here are presented 3 methods to perform data association between points in the world we are creating, and the measurements we have at a given pose
+- The first one is exhaustive search: compare the appearances of every measurement with the appearance of every point in the world
+- Another approach is to use a [map](https://en.cppreference.com/w/cpp/container/unordered_map) with key-value pairs being appearance-id of the point. This is regarded as "hash" in the legend of the plot
+- Lastly, we have the approach with the kd tree of 11 dimensional points
+
+Clearly, the approach with hash is the fastest and the exhaustive search is the slowest. However, the first approach has the huge flaw of hashing floats: namely, we will get a match only if the 10D vector of floats - that represent the appearance - match exactly. 
+
+Conversely, the approach with the kd tree is slightly slower, but it's possible to choose a ball radius in the appearance space where to search for a match. In this project the search done in the kd-tree is always a full search.
+
+<p align="center">
+<img src="imgs/time_plots.png" width="500" height="375">
+</p>
