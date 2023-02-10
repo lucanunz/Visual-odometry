@@ -65,7 +65,9 @@ splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1
 <img src="imgs/points_SE2.png">
 </p>
 
-To have a graph of the orientation error and the ratio, write in the gnuplot shell
+The computed RMSE between the true world points and the estimated ones (corrected by the ratio) is $0.208104$.
+
+ To have a graph of the orientation error and the ratio, write in the gnuplot shell
 ```
 plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2 w l title "ratio"
 ```

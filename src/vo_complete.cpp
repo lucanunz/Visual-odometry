@@ -235,7 +235,7 @@ int main() {
 
         cam.setWorldInCameraPose(Eigen::Isometry3f::Identity());
         solver.init(cam,points_for_picp.points(),current_pc.points()); //should find the current pose in the frame of the previous
-        for(int i=0;i<50;i++)
+        for(int i=0;i<1000;i++)
             solver.oneRound(correspondences_map,false);
         cam=solver.camera();
 
