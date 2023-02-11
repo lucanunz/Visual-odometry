@@ -73,9 +73,10 @@ The metrics are
 |----------------	| --------------------	|
 | $e_{\theta}$   	| mean: 5.31028e-06 	|
 | $1/{r_t}$ 		| median: 0.47337  	|
-| RMSE			| 0.184143           	|
+| $RMSE_{points}$	| 0.184143           	|
+| $RMSE_{pos}$		| 0.145332           	|
 
-where the RMSE is computed between the points of the created map, scaled by $0.47337$, and the corresponding true world points.
+where the $RMSE_{points}$ is computed between the points of the created map, scaled by $0.47337$, and the corresponding true world points, while the $RMSE_{pos}$ is computed between the ground truth position vectors and the corresponding estimated ones, scaled by $0.47337$.
 
 ## Visualization
 

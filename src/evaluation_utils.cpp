@@ -53,7 +53,7 @@ IsometryVector get_est_data(const std::string& file_path){
             std::getline(input_stream, line);
             std::stringstream ss_in(line);
             for(int j=0;j<3;j++){
-                ss_in>> rot(i,j);
+                ss_in >> rot(i,j);
             }
         }
         Eigen::Isometry3f X=Eigen::Isometry3f::Identity(); X.linear()=rot; X.translation()=point;
@@ -64,7 +64,7 @@ IsometryVector get_est_data(const std::string& file_path){
 }
 float median(std::vector<float> v)
 {
-    size_t n = v.size() / 2;
+    const size_t n = v.size() / 2;
     std::nth_element(v.begin(), v.begin()+n, v.end());
     return v[n];
 }
