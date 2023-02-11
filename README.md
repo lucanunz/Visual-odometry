@@ -8,9 +8,9 @@ In this branch, the pose of the robot is estimated in $SE(3)$ and the approach i
 - given this pose and the measurements, triangulate to have a set of world points
 - perform picp iteratively between subsequent poses. At each pose, we update the world map with the previously triangulated points, but use only the previously triangulated points to estimate the subsequent pose
 
-Measurements are characterized by 10 numbers that describe the appearance of the associated world points: data association is performed using a kd-tree where the points have 11 dimension. The first element of this points is an id, the other 10 are the appearances of the points: clearly, internal computation of the kd-tree ignores the first component of the vectors.
+Measurements are characterized by 10 numbers that describe the appearance of the associated world points: data association is performed using a kd-tree where the points have 11 dimension. The first component of these points is an id, the other 10 are their appearances: clearly, internal computation of the kd-tree ignores the first component.
 
-For a different approach, see the branch ***est_SE2***.
+For a different approach, see the branch ***est_SE2***. All the other branches have been used to develop features that have been merged in these two branches.
 
 ## Build
 
