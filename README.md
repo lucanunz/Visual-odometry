@@ -1,3 +1,4 @@
+
 # Visual-odometry
 
 This project consists in estimating the pose of a robot that is moving, based on world features it sees.
@@ -5,7 +6,7 @@ This project consists in estimating the pose of a robot that is moving, based on
 In this branch, the pose of the robot is estimated in $SE(2)$ and the approach is the following
 - estimate the pose between the first pair of measurements using epipolar geometry
 - given this pose and the measurements, triangulate to have a set of world points
-- perform projective icp (picp) iteratively between subsequent poses. At each pose, we update the world map with the previously triangulated points, and use the whole map in picp
+- perform projective icp (picp) iteratively between subsequent poses. At each pose, we update the world map with the previously triangulated points, and use the whole map in picp to estimate subsequent poses
 
 Data association is done in the same way as in the main branch. At the end of this README, a performance comparison between data association approaches is presented
 
@@ -21,15 +22,16 @@ Same as main branch.
 
 ## Metrics
 
-The metrics are
+Here we compare the metrics value obtained in this branch, with the ones of the main branch.
 
-| Metric        	| Value              	|
-|----------------	| --------------------	|
-| $e_{\theta}$   	| mean: -7.79368e-07 	|
-| $1/{r_t}$ 		| median: 0.473363   	|
-| RMSE			| 0.208104           	|
+| Metrics        	| Value branch *main* 	| Value branch *est_SE2* 	|
+|----------------	|-------------------	|----------------------	|
+| $e_{\theta}$   	| mean: 5.31028e-06 	| mean: -7.79368e-07   	|
+| $1/{r_t}$ 	| median: 0.47337   	| median: 0.473363     	|
+| $RMSE_{points}$            	| 0.184143          	| 0.208104             	|
+| $RMSE_{pos}$ |                          0.145332       | 0.126819  |
 
-where the RMSE is computed between the points of the created map, scaled by $0.473363$, and the corresponding true world points.
+recalling that $RMSE_{points}$ is computed between the points of the created map, scaled by the appropriate factor, and the corresponding true world points, while the $RMSE_{pos}$ is computed between the ground truth position vectors and the corresponding estimated ones, scaled by the median ratio.
 
 ## Visualization
 
@@ -78,3 +80,4 @@ Conversely, the approach with the kd tree is slightly slower, but it's possible 
 <p align="center">
 <img src="imgs/time_plots.png" width="500" height="375">
 </p>
+
