@@ -5,6 +5,8 @@
 #include "files_utils.h"
 #include "camera.h"
 #include "picp_solver.h"
+#include "epipolar_utils.h"
+
 Vector2fVector strip_id(const Vector3fVector& p_withid){
     Vector2fVector ret; ret.reserve(p_withid.size());
 
@@ -46,37 +48,17 @@ IntPairVector extract_correspondences_world(const IntPairVector& correspondences
     return correspondences;
 
 }
- void save_gt_trajectory(const std::string& file_path){
-    std::ifstream input_stream(file_path);
-    std::string word;
-    std::string line;
-    Vector3fVector points;
-    float n=0.f;
-    if(!input_stream.is_open()){
-        std::cout << "Unable to open " << file_path << std::endl;
-        return;
-    }
-    while (std::getline(input_stream, line)) {
-        std::stringstream ss(line);
-        Eigen::Vector3f point;
-        if(line.empty())
-            continue;
-        for (int i=0;i<4;i++)
-            ss >> word;
-        for (int i = 0; i < 2; i++) {
-            ss >> n;
-            point(i)=n;
-        }
-        point.z()=0.f;
-        points.push_back(point);
-    }
-    input_stream.close();
-    write_eigen_vectors_to_file("trajectory_gt.txt",points);
-}
-int main() {
-    // Using real data 
 
-    const std::string path="/home/luca/vo_data/data/";
+int main(int argc, char* argv[]) {
+    if(argc < 2){
+        std::cout << "Error: need path parameter to read data" << std::endl;
+        return -1;
+    }
+
+    std::string path(argv[1]);
+    if(path.back() != '/')
+        path.push_back('/');
+    
     save_gt_trajectory(path+"trajectory.dat");
     const std::regex pattern("^meas-\\d.*\\.dat$");
     std::set<std::string> files;
@@ -113,8 +95,8 @@ int main() {
     // initialize a camera object
     std::vector<int> int_params; //z_near,z_far,cols,rows
     Eigen::Matrix3f k;
-
-    if(!get_camera_params(path+"camera.dat",int_params,k)){
+    Eigen::Isometry3f H;
+    if(!get_camera_params(path+"camera.dat",int_params,k,H)){
         std::cout << "Unable to get camera parameters\n";
         return -1; 
     }
@@ -131,7 +113,7 @@ int main() {
 
     // The estimated transform X is the pose 00000 in frame 00001. "triangulated" are points expressed in 00000.
 
-    VectorIsometry trajectory; trajectory.reserve(files.size()+2);
+    IsometryVector trajectory; trajectory.reserve(files.size()+2);
     trajectory.push_back(Eigen::Isometry3f::Identity());
     trajectory.push_back(X);
     PICPSolver solver;
@@ -182,6 +164,6 @@ int main() {
         time_file << t_end-t_start << std::endl;
     }
     time_file.close();
-    save_trajectory("trajectory_est_noWorld.txt",trajectory);
+    save_trajectory("trajectory_est_noWorld.txt",trajectory,H);
     return 0;
 }

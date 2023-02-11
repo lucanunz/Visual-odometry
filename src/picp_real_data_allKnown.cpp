@@ -23,37 +23,17 @@ IntPairVector computeFakeCorrespondencesWorld(const Vector3fVector& image_points
     return correspondences;
 }
 
- void save_gt_trajectory(const std::string& file_path){
-    std::ifstream input_stream(file_path);
-    std::string word;
-    std::string line;
-    Vector3fVector points;
-    float n=0.f;
-    if(!input_stream.is_open()){
-        std::cout << "Unable to open " << file_path << std::endl;
-        return;
+int main(int argc, char* argv[]) {
+    // Data gathering --------
+    if(argc < 2){
+        std::cout << "Error: need path parameter to read data" << std::endl;
+        return -1;
     }
-    while (std::getline(input_stream, line)) {
-        std::stringstream ss(line);
-        Eigen::Vector3f point;
-        if(line.empty())
-            continue;
-        for (int i=0;i<4;i++)
-            ss >> word;
-        for (int i = 0; i < 2; i++) {
-            ss >> n;
-            point(i)=n;
-        }
-        point.z()=0.f;
-        points.push_back(point);
-    }
-    input_stream.close();
-    write_eigen_vectors_to_file("trajectory_gt.txt",points);
-}
 
- int main(){
-    // -------- data gathering
-    const std::string path="/home/luca/vo_data/data/";
+    std::string path(argv[1]);
+    if(path.back() != '/')
+        path.push_back('/');
+    
     save_gt_trajectory(path+"trajectory.dat");
 
     const std::regex pattern("^meas-\\d.*\\.dat$");
@@ -71,8 +51,8 @@ IntPairVector computeFakeCorrespondencesWorld(const Vector3fVector& image_points
     // initialize a camera object
     std::vector<int> int_params; //z_near,z_far,cols,rows
     Eigen::Matrix3f k;
-
-    if(!get_camera_params(path+"camera.dat",int_params,k)){
+    Eigen::Isometry3f H;
+    if(!get_camera_params(path+"camera.dat",int_params,k,H)){
         std::cout << "Unable to get camera parameters\n";
         return -1; 
     }
@@ -80,16 +60,10 @@ IntPairVector computeFakeCorrespondencesWorld(const Vector3fVector& image_points
 
     Camera cam(int_params[3],int_params[2],int_params[0],int_params[1],k);
 
-    Eigen::Isometry3f X0; //relative pose of the 0 position of the camera in the world frame. Used to compare with the gt trajectory
-    X0.linear() << 0.f, 0.f, 1.f,
-            -1.f,0.f,0.f,
-            0.f,-1.f,0.f;
-    X0.translation() << 0.2f,0.f,0.f;
-
-    VectorIsometry trajectory; trajectory.reserve(files.size());
+    IsometryVector trajectory; trajectory.reserve(files.size());
     PICPSolver solver;
     solver.setKernelThreshold(10000);
-    Eigen::Isometry3f X_curr=X0.inverse();
+    Eigen::Isometry3f X_curr=H.inverse();
     for(const auto& file : files){
         Vector3fVector current_image_points_withid;
         Vector2fVector current_image_points;
@@ -113,6 +87,6 @@ IntPairVector computeFakeCorrespondencesWorld(const Vector3fVector& image_points
         trajectory.push_back(cam.worldInCameraPose());
         X_curr=cam.worldInCameraPose();
     }
-    save_trajectory("trajectory_est.txt",trajectory);
+    save_trajectory("trajectory_est.txt",trajectory,H);
     return 0;
  }

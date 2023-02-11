@@ -19,6 +19,18 @@ Same as main branch.
 
 Same as main branch.
 
+## Metrics
+
+The metrics are
+
+| Metric        	| Value              	|
+|----------------	| --------------------	|
+| $e_{\theta}$   	| mean: -7.79368e-07 	|
+| $1/{r_t}$ 		| median: 0.473363   	|
+| RMSE			| 0.208104           	|
+
+where the RMSE is computed between the points of the created map, scaled by $0.473363$, and the corresponding true world points.
+
 ## Visualization
 
 To compare estimated and true trajectory, write in the terminal
@@ -42,7 +54,6 @@ splot "world_pruned.txt" u 1:2:3 w p ps 0.7 title "true","map_corrected.txt" u 1
 <img src="imgs/points_SE2.png">
 </p>
 
-The computed RMSE between the true world points and the estimated ones (corrected by the ratio) is $0.208104$.
 
  To have a graph of the orientation error and the ratio, write in the gnuplot shell
 ```
@@ -52,13 +63,12 @@ plot "out_performance.txt" u 1 w l title "orientation","out_performance.txt" u 2
 <img src="imgs/errors_SE2.png" width="500" height="375">
 </p>
 
-The orientation error is of the order of $10^{-6}$, and the points where the ratio is not plotted is when the robot stops moving, hence the norm of the ground truth translation is 0.
 
 ## Data association
 
-Here are presented 3 methods to perform data association between points in the world we are creating, and the measurements we have at a given pose
+Here are presented 3 methods to perform data association between points in the world we are creating, and the measurements we have at a given pose. It is to be noted that all of them yield the same result.
 - The first one is exhaustive search: compare the appearances of every measurement with the appearance of every point in the world
-- Another approach is to use a [map](https://en.cppreference.com/w/cpp/container/unordered_map) with key-value pairs being appearance-id of the point. This is regarded as "hash" in the legend of the plot
+- Another approach is to use a [map](https://en.cppreference.com/w/cpp/container/unordered_map) with key-value pairs being appearance-id of the point. This is regarded as "hash" in the legend of the plot below
 - Lastly, we have the approach with the kd tree of 11 dimensional points
 
 Clearly, the approach with hash is the fastest and the exhaustive search is the slowest. However, the first approach has the huge flaw of hashing floats: namely, we will get a match only if the 10D vector of floats - that represent the appearance - match exactly. 
