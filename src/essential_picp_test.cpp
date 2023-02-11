@@ -6,6 +6,7 @@
 #include "files_utils.h"
 #include "camera.h"
 #include "picp_solver.h"
+#include "epipolar_utils.h"
 
 void computeFakeCorrespondences(IntPairVector& correspondences,
 				const Vector2fVector reference_image_points,

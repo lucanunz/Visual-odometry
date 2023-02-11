@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "files_utils.h"
 #include "camera.h"
+#include "epipolar_utils.h"
 
 Vector2fVector strip_id(const Vector3fVector& p_withid){
     Vector2fVector ret; ret.reserve(p_withid.size());
@@ -29,10 +30,17 @@ IntPairVector extract_correspondences_images(const Vector3fVector& reference_ima
     return correspondences;
 }
 
-int main() {
-    // Using real data 
+int main(int argc, char* argv[]) {
     
-    const std::string path="/home/luca/vo_data/data/";
+    if(argc < 2){
+        std::cout << "Error: need path parameter to read data" << std::endl;
+        return -1;
+    }
+
+    std::string path(argv[1]);
+    if(path.back() != '/')
+        path.push_back('/');
+
     const std::regex pattern("^meas-\\d.*\\.dat$");
     std::set<std::string> files;
     if(!get_file_names(path,files,pattern)){
@@ -73,8 +81,8 @@ int main() {
     // initialize a camera object
     std::vector<int> int_params; //z_near,z_far,cols,rows
     Eigen::Matrix3f k;
-
-    if(!get_camera_params(path+"camera.dat",int_params,k)){
+    Eigen::Isometry3f H;
+    if(!get_camera_params(path+"camera.dat",int_params,k,H)){
         std::cout << "Unable to get camera parameters\n";
         return -1; 
     }
@@ -88,13 +96,8 @@ int main() {
     Vector3fVector triangulated;
     triangulate_points(k,X,correspondences_imgs,reference_image_points,current_image_points,triangulated);
 
-    Eigen::Isometry3f X0; //relative pose of the 0 position of the camera in the world frame
-    X0.linear() << 0.f, 0.f, 1.f,
-            -1.f,0.f,0.f,
-            0.f,-1.f,0.f;
-    X0.translation() << 0.2f,0.f,0.f;
     for(auto& p : triangulated)
-        p=X0*p;
+        p=H*p;
     write_eigen_vectors_to_file("triangulated.txt",triangulated);
     return 0;
 }

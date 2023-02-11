@@ -2,105 +2,21 @@
 #include <cmath>
 #include "utils.h"
 #include "files_utils.h"
+#include "evaluation_utils.h"
 
-template <int dim>
-std::vector<Eigen::Matrix<float,dim,1>,Eigen::aligned_allocator<Eigen::Matrix<float,dim,1>> > read(const std::string& file_path){
-    std::ifstream input_stream(file_path);
-    std::string word;
-    std::string line;
-    std::vector<Eigen::Matrix<float,dim,1>,Eigen::aligned_allocator<Eigen::Matrix<float,dim,1>> > points;
-    float n=0.f;
-    if(!input_stream.is_open()){
-        std::cout << "Unable to open " << file_path << std::endl;
-        return points;
+int main(int argc, char* argv[]) {
+    // Using real data 
+    if(argc < 2){
+        std::cout << "Error: need path parameter to read data" << std::endl;
+        return -1;
     }
-    while (std::getline(input_stream, line)) {
-        std::stringstream ss(line);
-        Eigen::Matrix<float,dim,1> point;
-        if(line.empty())
-            continue;
-        for (int i = 0; i < dim; i++) {
-            ss >> n;
-            point(i)=n;
-        }
-        points.push_back(point);
-    }
-    input_stream.close();
-    return points;
-}
- VectorIsometry get_gt_data(const std::string& file_path){
-    std::ifstream input_stream(file_path);
-    std::string word;
-    std::string line;
-    VectorIsometry data;
-    float n=0.f;
-    if(!input_stream.is_open()){
-        std::cout << "Unable to open " << file_path << std::endl;
-        return data;
-    }
-    while (std::getline(input_stream, line)) {
-        std::stringstream ss(line);
-        Eigen::Vector3f info;
-        if(line.empty())
-            continue;
-        for (int i=0;i<4;i++)
-            ss >> word;
-        for (int i = 0; i < 3; i++) {
-            ss >> n;
-            info(i)=n;
-        }
-        Eigen::Isometry3f X=Eigen::Isometry3f::Identity();
-        X.linear()=RotationZ(info(2));
-        X.translation() << info.head<2>(),0.f;
-        data.push_back(X);
-    }
-    input_stream.close();
-    return data;
-}
-VectorIsometry get_est_data(const std::string& file_path){
-    std::ifstream input_stream(file_path);
-    std::string word;
-    std::string line;
-    VectorIsometry trajectory;
-    float n=0.f;
-    if(!input_stream.is_open()){
-        std::cout << "Unable to open " << file_path << std::endl;
-        return trajectory;
-    }
-    while (std::getline(input_stream, line)) {
-        std::stringstream ss(line);
-        Eigen::Vector3f point;
-        if(line.empty())
-            continue;
-        for (int i = 0; i < 3; i++) {
-            ss >> n;
-            point(i)=n;
-        }
-        Eigen::Matrix3f rot=Eigen::Matrix3f::Identity();
-        for(int i=0;i<3;i++){
-            std::getline(input_stream, line);
-            std::stringstream sss(line);
-            for(int j=0;j<3;j++){
-                sss>>n;
-                rot(i,j)=n;
-            }
-        }
-        Eigen::Isometry3f X=Eigen::Isometry3f::Identity(); X.linear()=rot; X.translation()=point;
-        trajectory.push_back(X);
-    }
-    input_stream.close();
-    return trajectory;
-}
-float median(std::vector<float> &v)
-{
-    size_t n = v.size() / 2;
-    std::nth_element(v.begin(), v.begin()+n, v.end());
-    return v[n];
-}
-int main(){
-    const std::string path="/home/luca/vo_data/data/";
-    const VectorIsometry gt_data=get_gt_data(path+"trajectory.dat");
-    const VectorIsometry traj_est_data=get_est_data("trajectory_est_data.txt");
+
+    std::string path(argv[1]);
+    if(path.back() != '/')
+        path.push_back('/');
+
+    const IsometryVector gt_data=get_gt_data(path+"trajectory.dat");
+    const IsometryVector traj_est_data=get_est_data("trajectory_est_data.txt");
     std::vector<float> orientation_error;
     std::vector<float> ratio;
     for(size_t i=1;i<gt_data.size();i++){
@@ -119,7 +35,7 @@ int main(){
         output_file << orientation_error[i] << " " << ratio[i] << std::endl;
     
     output_file.close();
-    const Vector3fVector map_est=read<3>("map.txt");
+    const Vector3fVector map_est=read_eigen_vectors<3>("map.txt");
     Vector3fVector map_corrected;
     const float median_ratio=1./median(ratio);
     std::cout << "ratio used for map correction: " << median_ratio << std::endl;
@@ -127,13 +43,14 @@ int main(){
         map_corrected.push_back(p*median_ratio);
     
     write_eigen_vectors_to_file("map_corrected.txt",map_corrected);
-    const Vector10fVector map_appearances=read<10>("map_appearances.txt");
+    const Vector10fVector map_appearances=read_eigen_vectors<10>("map_appearances.txt");
     Vector3fVector world_points;
     Vector10fVector world_points_appearances;
     if(!get_meas_content(path+"world.dat",world_points_appearances,world_points,true)){
         std::cout << "Unable to open world file\n";
         return -1;     
     }
+    
     Vector3fVector world_pruned;
     Vector6fVector world_map_points;
     float rmse=0.f;

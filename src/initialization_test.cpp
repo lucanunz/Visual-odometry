@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "files_utils.h"
 #include "camera.h"
+#include "epipolar_utils.h"
 
 void computeFakeCorrespondences(IntPairVector& correspondences,
 				const Vector2fVector reference_image_points,

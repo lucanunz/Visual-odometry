@@ -6,7 +6,7 @@
 #include "camera.h"
 #include "picp_solver.h"
 #include "eigen_kdtree.h"
-#include "PointCloud.h"
+#include "epipolar_utils.h"
 #include <unordered_map>
 
 IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
@@ -47,32 +47,6 @@ IntPairVector compute_correspondences_images(const Vector10fVector& appearances1
 
     return correspondences;
 }
-// template<typename T>
-// struct matrix_hash : std::unary_function<T, size_t> {
-//   std::size_t operator()(T const& matrix) const {
-//     size_t seed = 0;
-//     for (size_t i = 0; i < matrix.size(); ++i) {
-//       auto elem = *(matrix.data() + i);
-//       seed ^= std::hash<typename T::Scalar>()(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-//     }
-//     return seed;
-//   }
-// };
-// IntPairVector compute_correspondences_images(const Vector10fVector& appearances1, const Vector10fVector& appearances2){
-//     std::unordered_map<Vector10f, int, matrix_hash<Vector10f>> map;
-//     IntPairVector correspondences; correspondences.reserve(std::min(appearances1.size(),appearances2.size()));
-//     for (size_t i=0;i<appearances1.size();i++)
-//         map[appearances1[i]] = i;
-    
-//     for (size_t i=0;i<appearances2.size();i++) {
-//         auto it=map.find(appearances2[i]);
-
-//         if (it!=map.end())
-//             correspondences.push_back(IntPair(it->second, i));
-        
-//     }
-//     return correspondences;
-// }
 
 // correspondences_imgs are (ref_idx,curr_idx), correspondences_world are (ref_idx,world_idx). We extract the pairs (curr_idx,world_idx)
 IntPairVector extract_correspondences_world(const IntPairVector& correspondences_imgs,const IntPairVector& correspondences_world){
@@ -90,38 +64,18 @@ IntPairVector extract_correspondences_world(const IntPairVector& correspondences
     return correspondences;
 
 }
- void save_gt_trajectory(const std::string& file_path){
-    std::ifstream input_stream(file_path);
-    std::string word;
-    std::string line;
-    Vector3fVector points;
-    float n=0.f;
-    if(!input_stream.is_open()){
-        std::cout << "Unable to open " << file_path << std::endl;
-        return;
-    }
-    while (std::getline(input_stream, line)) {
-        std::stringstream ss(line);
-        Eigen::Vector3f point;
-        if(line.empty())
-            continue;
-        for (int i=0;i<4;i++)
-            ss >> word;
-        for (int i = 0; i < 2; i++) {
-            ss >> n;
-            point(i)=n;
-        }
-        point.z()=0.f;
-        points.push_back(point);
-    }
-    input_stream.close();
-    write_eigen_vectors_to_file("trajectory_gt.txt",points);
-}
 
-int main() {
-    // Using real data 
+int main(int argc, char* argv[]) {
 
-    const std::string path="/home/luca/vo_data/data/";
+    if(argc < 2){
+        std::cout << "Error: need path parameter to read data" << std::endl;
+        return -1;
+    }
+
+    std::string path(argv[1]);
+    if(path.back() != '/')
+        path.push_back('/');
+
     save_gt_trajectory(path+"trajectory.dat");
     const std::regex pattern("^meas-\\d.*\\.dat$");
     std::set<std::string> files;
@@ -139,11 +93,11 @@ int main() {
     PointCloudVector<2> reference_pc;
     PointCloudVector<2> current_pc;
     if(!get_meas_content(path+first_file,reference_pc)){
-        std::cout << "Unable to open file 1\n";
+        std::cout << "Unable to open file measurement file 0\n";
         return -1;
     }
     if(!get_meas_content(path+second_file,current_pc)){
-        std::cout << "Unable to open file 2\n";
+        std::cout << "Unable to open file measurement file 1\n";
         return -1;
     }
     Vector3fVector world_points;
@@ -159,8 +113,9 @@ int main() {
     // initialize a camera object
     std::vector<int> int_params; //z_near,z_far,cols,rows
     Eigen::Matrix3f k;
+    Eigen::Isometry3f H;
 
-    if(!get_camera_params(path+"camera.dat",int_params,k)){
+    if(!get_camera_params(path+"camera.dat",int_params,k,H)){
         std::cout << "Unable to get camera parameters\n";
         return -1; 
     }
@@ -177,7 +132,7 @@ int main() {
 
     // The estimated transform X is the pose 00000 in frame 00001. "triangulated" are points expressed in 00000.
 
-    VectorIsometry trajectory; trajectory.reserve(files.size()+2);
+    IsometryVector trajectory; trajectory.reserve(files.size()+2);
     trajectory.push_back(Eigen::Isometry3f::Identity());
     trajectory.push_back(X);
     PICPSolver solver;
@@ -185,9 +140,7 @@ int main() {
 
     reference_pc=current_pc;
     //given the above swaps, now correspondences_world actually contains (ref_idx,world_idx)
-    double t_start=0;
-    double t_end=0;
-    std::ofstream time_file("time_kd_opt.txt");
+
     PointCloudVector<3> triangulated_transformed;
     PointCloudVector<3> map;
     map.update(triangulated_pc);
@@ -200,9 +153,7 @@ int main() {
             std::cout << "Unable to open file " << path+file << std::endl;
             return -1;
         }
-        t_start=getTime();
         correspondences_imgs = compute_correspondences_images(reference_pc.appearances(),current_pc.appearances());
-        t_end=getTime();
         correspondences_world=extract_correspondences_world(correspondences_imgs,correspondences_world);
 
         triangulated_transformed=X_curr*triangulated_pc;
@@ -225,20 +176,12 @@ int main() {
         history=history*cam.worldInCameraPose().inverse();
         reference_pc=current_pc;
 
-        std::cout << "correspondences search took: " << (t_end-t_start) << " ms" << std::endl;
-        time_file << t_end-t_start << std::endl;
     }
-    time_file.close();
 
-    Eigen::Isometry3f H=Eigen::Isometry3f::Identity();
-    H.linear() << 0.f, 0.f, 1.f,
-            -1.f,0.f,0.f,
-            0.f,-1.f,0.f;
-    H.translation() << 0.2f,0.f,0.f;
     map=H*map;
     write_eigen_vectors_to_file("map.txt",map.points());
     write_eigen_vectors_to_file("map_appearances.txt",map.appearances());
-    save_trajectory("trajectory_est_complete.txt",trajectory);
-    save_trajectory_data("trajectory_est_data.txt",trajectory);
+    save_trajectory("trajectory_est_complete.txt",trajectory,H);
+    save_trajectory("trajectory_est_data.txt",trajectory,H,true);
     return 0;
 }

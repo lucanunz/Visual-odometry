@@ -4,9 +4,16 @@
 #include "files_utils.h"
 #include "camera.h"
 
-int main() {
-    //read file names
-    const std::string path="/home/luca/vo_data/data/";
+int main(int argc, char* argv[]) {
+    if(argc < 2){
+        std::cout << "Error: need path parameter to read data" << std::endl;
+        return -1;
+    }
+
+    std::string path(argv[1]);
+    if(path.back() != '/')
+        path.push_back('/');
+    
     const std::regex pattern("^meas-\\d.*\\.dat$");
     std::set<std::string> files;
     if(!get_file_names(path,files,pattern)){
@@ -33,10 +40,10 @@ int main() {
     }
     
     // initialize a camera object
-    std::vector<int> int_params; //z_near,z_far,cols,rows
+    std::vector<int> int_params; int_params.reserve(4); //z_near,z_far,cols,rows
     Eigen::Matrix3f k;
-
-    if(!get_camera_params(path+"camera.dat",int_params,k)){
+    Eigen::Isometry3f H;
+    if(!get_camera_params(path+"camera.dat",int_params,k,H)){
         std::cout << "Unable to get camera parameters\n";
         return -1; 
     }
