@@ -24,7 +24,7 @@ A folder `exec/` will be created inside the build folders, with the following ex
    - `picp_test`: synthetic data and measurements from 2 poses are generated, the relative pose is estimated using picp
    - `whole_test`: synthetic data and 3 sets of measurements are generated: estimation of the relative pose between the first two cameras is done using epipolar geometry. Given this transformation, we triangulate to estimate the position of the points in the world, and then use this estimate to perform picp
 
-- A second set of executables that work with real data. For each one, one must specify the path to the real data folder from the terminal, e. g. ```./executable_name /my_dir/.../vo_data/data/```
+- A second set of executables that work with real data
    - `read_data_test`: a test to see if the measurement files are retrieved correctly. 
    - `real_init`: the relative position between the first 2 set of real measurements is estimated using epipolar geometry
    - `picp_known_real`: picp is performed on the given data, assuming that the position of the points in the world is known and also data association in known
@@ -51,7 +51,9 @@ where matlab-like indexing is used. These last two quantities are used for evalu
 
 ## Run
 
-After having built the project as stated above, run the created executable ```vo_complete``` that will generate the following files
+To run any of the executables that work with real data, one must specify the path to the real data folder from the terminal when running, e. g. ```./executable_name /my_dir/.../vo_data/data/```
+
+When running the created executable ```vo_complete``` the following files will be generated
 - ```world.txt``` containing all the true world points, one on each line
 - ```trajectory_gt.txt``` containing on each line the true position of the robot in the form $[t_x \ t_y \ t_z]$, expressed in the world frame
 - ```map.txt``` containing all the estimated world points, one on each line
@@ -59,7 +61,7 @@ After having built the project as stated above, run the created executable ```vo
 - ```trajectory_est_complete.txt```containing on each line the estimated position of the robot in the form $[t_x \ t_y \ t_z]$, expressed in the world frame
 - ```trajectory_est_data.txt``` that contains the estimated pose of the robot expressed in the world frame. Pose $i$ is written on this file with one line for $[t_{x_i} \ t_{y_i} \ t_{z_i}]$, and the next three lines contain the rotation matrix $\textbf{R}_i$ written in row major order
 
-Then, run the executable ```evaluation``` that will read from the ground truth trajectory file ```trajectory.dat```,```world.dat``` (not the ones created before), and from some of the newly created files, and will generate
+Then, run the executable ```evaluation```: it will read from files located in the specified data folder, and from some of the newly created files that must be in the same directory as the one from where we are running the evaluation executable. It will generate
 - ```out_performance.txt``` where on line $i$ we have the orientation error and translation ratio for pose $i$ as detailed above
 - ```map_corrected.txt``` containing the same points as ```map.txt``` but scaled by the found translation ratio
 - ```world_pruned.txt``` that contains the true position of the world points that are in map
